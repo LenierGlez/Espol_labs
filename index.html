@@ -6,6 +6,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESPOL Laboratorios - Prototipo Interactivo</title>
     <style>
+        /* --- NUEVO: Estilos para "Juicy UI" y Notificaciones --- */
+
+        /* 1. Animación de Rebote (Bounce) al hacer clic */
+        @keyframes clickBounce {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(0.95);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .btn-bounce {
+            animation: clickBounce 0.2s ease-out;
+        }
+
+        /* 2. Contenedor de Toasts (Notificaciones del Sistema) */
+        #system-toast-container {
+            position: absolute;
+            top: 60px;
+            /* Debajo del header */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            z-index: 2000;
+            pointer-events: none;
+            /* Para poder hacer clic a través de ellos */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 3. La Notificación Toast Individual */
+        .system-toast {
+            background: rgba(31, 41, 51, 0.95);
+            /* Gris oscuro casi negro */
+            color: white;
+            padding: 12px 16px;
+            border-radius: 50px;
+            /* Forma de píldora */
+            font-size: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideDownFade 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes slideDownFade {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .toast-avatar {
+            width: 24px;
+            height: 24px;
+            background: #0055A4;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        /* 4. Canvas para Confeti (Invisible por defecto) */
+        #confetti-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3000;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -2029,17 +2120,90 @@
             transform: scale(0.97);
         }
 
+        /* 1. El Contenedor: Una ventana fija */
+        /* --- ESTILOS MAPA FULL SCREEN (NUEVO) --- */
         .map-container {
-            max-height: 360px;
-            overflow: auto;
-            background: #000000;
+            flex: 1;
+            /* Ocupa todo el espacio debajo del header */
+            width: 100%;
+            position: relative;
+            /* Necesario para los botones flotantes */
+            overflow: hidden;
+            /* Oculta las barras de desplazamiento feas */
+            cursor: grab;
+            /* Cursor de manito */
+            background: #e5e7eb;
+            /* Fondo gris suave de respaldo */
+        }
+
+        .map-container:active {
+            cursor: grabbing;
+            /* Manito cerrada al arrastrar */
         }
 
         .map-container img {
             display: block;
+            /* TRUCO DE CALIDAD: Iniciamos la imagen al 250% del ancho de la pantalla */
+            width: 250%;
+            height: auto;
             max-width: none;
-            width: 100%;
             transform-origin: top left;
+            transition: width 0.2s ease;
+            /* Suaviza el zoom */
+
+            /* Renderizado nítido */
+            image-rendering: -webkit-optimize-contrast;
+        }
+
+        /* Botones flotantes (abajo a la derecha) */
+        .map-floating-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            /* Blanco semitransparente */
+            backdrop-filter: blur(4px);
+            padding: 8px 12px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            /* Sombra elegante */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .map-floating-controls button,
+        .map-floating-controls a {
+            background: #0055A4;
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            text-decoration: none;
+            /* Quita el subrayado del link */
+            transition: transform 0.1s;
+        }
+
+        /* Efecto al presionar */
+        .map-floating-controls button:active,
+        .map-floating-controls a:active {
+            transform: scale(0.9);
+        }
+
+        /* Ajuste para el texto del % de zoom */
+        #map-zoom-label {
+            font-size: 12px;
+            color: #1F2933;
+            min-width: 40px;
+            text-align: center;
         }
     </style>
 </head>
@@ -2117,6 +2281,20 @@
                     <div class="header">
                         <div class="title">Laboratorios</div>
                         <div class="prefs-icon" id="prefs-icon-btn" onclick="openPrefsModal()">⚙️</div>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label class="label" style="font-size: 11px; margin-bottom: 5px;">📍 ¿Dónde estás?</label>
+                        <select id="location-select" class="input select" onchange="renderLabList()"
+                            style="padding: 10px; font-size: 13px; height: auto;">
+                            <option value="">-- Selecciona tu ubicación --</option>
+                            <option value="FIEC">FIEC</option>
+                            <option value="FIMCP">FIMCP</option>
+                            <option value="FADCOM">FADCOM</option>
+                            <option value="FCV">FCV</option>
+                            <option value="FCNM">FCNM</option>
+                            <option value="BIBLIOTECA">Biblioteca</option>
+                        </select>
                     </div>
 
                     <!-- Filtro de Software -->
@@ -2499,35 +2677,43 @@
 
             <!-- Pantalla Dashboard -->
             <div <!-- Pantalla: Mapa del Campus -->
-                <div id="screen-campus-map" class="screen">
-                    <div class="detail-screen scrollable">
-                        <div class="back-arrow" onclick="navigateTo('screen-menu-student', 'slide-right')">←</div>
-                        <div class="header">
-                            <div class="title">Mapa del Campus</div>
-                        </div>
+                <div id="screen-campus-map" class="screen"
+                    style="display: flex; flex-direction: column; background: #e5e7eb;">
+                    <div class="header"
+                        style="padding: 20px 20px 10px 20px; background: white; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                        <div class="back-arrow" onclick="navigateTo('screen-menu-student', 'slide-right')"
+                            style="position: static; margin-right: 15px; display:inline-block;">←</div>
+                        <div class="title" style="display:inline-block; width: auto;">Mapa del Campus</div>
+                    </div>
 
-                        <div class="content">
-                            <div class="detail-card">
-                                <div class="detail-label">Campus Gustavo Galindo</div>
-                                <div class="detail-text" style="margin-bottom: 10px;">
-                                    Visualiza la ubicación de facultades, laboratorios y servicios dentro del campus
-                                    ESPOL.
-                                </div>
+                    <div class="map-container" id="map-viewport">
+                        <div id="map-content-wrapper"
+                            style="position: relative; display: inline-block; width: 250%; transition: width 0.2s ease; transform-origin: top left;">
 
-                                <div class="map-wrapper">
-                                    <div class="map-toolbar">
-                                        <button type="button" onclick="zoomOutMap()">−</button>
-                                        <span id="map-zoom-label">100%</span>
-                                        <button type="button" onclick="zoomInMap()">＋</button>
-                                        <button type="button" onclick="resetMapZoom()">↺</button>
-                                    </div>
+                            <img id="campus-map-img" src="mapaespol.png" alt="Mapa del campus ESPOL"
+                                style="display: block; width: 100%; height: auto; image-rendering: -webkit-optimize-contrast;">
 
-                                    <div class="map-container">
-                                        <img id="campus-map-img" src="mapaespol.png" alt="Mapa del campus ESPOL">
-                                    </div>
-                                </div>
+                            <div class="user-location-marker"
+                                style="position: absolute; top: 48%; left: 42%; transform: translate(-50%, -100%); z-index: 10; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3)); pointer-events: none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"
+                                    fill="#E74C3C">
+                                    <path
+                                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                    <circle cx="12" cy="9.5" r="2.5" fill="white" />
+                                </svg>
                             </div>
+
                         </div>
+                    </div>
+                    <div class="map-floating-controls">
+                        <a href="https://www.google.com/maps/d/viewer?mid=1UBvIU63lnyja8u4ufFiVlIoO0NvSpJll&femb=1&ll=-2.1458003988877534%2C-79.96461885853174&z=17"
+                            target="_blank" title="Abrir en Google Maps">🗺️</a>
+
+                        <button type="button" onclick="zoomOutMap()">−</button>
+                        <span id="map-zoom-label"
+                            style="background: white; padding: 2px 5px; border-radius: 4px; font-weight: bold;">100%</span>
+                        <button type="button" onclick="zoomInMap()">＋</button>
+                        <button type="button" onclick="resetMapZoom()">↺</button>
                     </div>
                 </div>
 
@@ -2609,569 +2795,163 @@
 
             </div>
 
-            <div class="navigation-dots" id="nav-dots">
-                <div class="dot active" data-dot="1"></div>
-                <div class="dot" data-dot="2"></div>
-                <div class="dot" data-dot="3"></div>
-                <div class="dot" data-dot="4"></div>
-            </div>
-
-            <div class="info-panel" id="info-panel">
-                <div class="info-title" id="info-title">👋 Pantalla de Inicio</div>
-                <div class="info-text" id="info-text">Selecciona tu rol para comenzar a usar la aplicación</div>
-            </div>
+            <div id="system-toast-container"></div>
+            <canvas id="confetti-canvas"></canvas>
+        </div>
+        <div class="navigation-dots" id="nav-dots">
+            <div class="dot active" data-dot="1"></div>
+            <div class="dot" data-dot="2"></div>
+            <div class="dot" data-dot="3"></div>
+            <div class="dot" data-dot="4"></div>
         </div>
 
-        <script>
-            let currentScreen = 'screen-login';
-            let previousScreenStack = ['screen-login'];
-            let userRole = null;
-            let pcStates = [];
-            let selectedFaultKey = null;
-            let labs = [];
-            let selectedLab = null;
-            let newNotification = false;
-            let simulatedEvidenceFile = null;
-            let currentSelectedPCIndex = null;
+        <div class="info-panel" id="info-panel">
+            <div class="info-title" id="info-title">👋 Pantalla de Inicio</div>
+            <div class="info-text" id="info-text">Selecciona tu rol para comenzar a usar la aplicación</div>
+        </div>
+    </div>
 
-            // --- NUEVO: Estado de Reserva ---
-            let currentReservation = null; // { lab: 'Lab 101', pc: 1, time: '10:00 - 10:15' }
+    <script>
+        let currentScreen = 'screen-login';
+        let previousScreenStack = ['screen-login'];
+        let userRole = null;
+        let pcStates = [];
+        let selectedFaultKey = null;
+        let labs = [];
+        let selectedLab = null;
+        let newNotification = false;
+        let simulatedEvidenceFile = null;
+        let currentSelectedPCIndex = null;
 
-            // --- Mapa del Campus ---
-            let mapZoom = 1;
-            let selectedBookingSlot = null;
+        // --- NUEVO: Estado de Reserva ---
+        let currentReservation = null; // { lab: 'Lab 101', pc: 1, time: '10:00 - 10:15' }
 
-            let faultReports = [
-                { id: 1, lab: 'Lab 101 (FIEC)', pc: 12, description: 'No enciende. Posible problema de fuente.', status: 'recibido', priority: 'alta', evidence: 'falla_fuente.jpg', fixTime: null },
-                { id: 2, lab: 'Lab 103 (FIMCP)', pc: 3, description: 'Sin internet. Cable desconectado.', status: 'en revision', priority: 'media', evidence: null, fixTime: null },
-                { id: 3, lab: 'Lab 101 (FIEC)', pc: 8, description: 'Teclado dañado. Teclas no responden.', status: 'recibido', priority: 'media', evidence: 'tecla_rota.png', fixTime: null },
-                { id: 4, lab: 'Lab 105 (FADCOM)', pc: 5, description: 'Monitor no da imagen.', status: 'resuelto', priority: 'baja', evidence: null, fixTime: '15 min' },
-                { id: 5, lab: 'Lab 102 (FIEC)', pc: 2, description: 'Mouse no funciona.', status: 'recibido', priority: 'baja', evidence: null, fixTime: null },
-                { id: 6, lab: 'Lab 101 (FIEC)', pc: 12, description: 'Pantalla azul al iniciar Windows.', status: 'recibido', priority: 'alta', evidence: 'bsod.jpg', fixTime: null },
-            ];
+        // --- Mapa del Campus ---
+        let mapZoom = 1;
+        let selectedBookingSlot = null;
 
-            const softwareDB = {
-                'FIEC': ['Python', 'Java', 'Docker', 'VS Code', 'Matlab'],
-                'FIMCP': ['AutoCAD', 'SolidWorks', 'Matlab'],
-                'FADCOM': ['Adobe Illustrator', 'Photoshop', 'Blender'],
-                'FCV': ['RStudio', 'BioPython', 'Office 365'],
-                'FCNM': ['Matlab', 'Python', 'RStudio'],
-                'BIBLIOTECA': ['Office 365', 'Chrome', 'Adobe Reader'],
-                'General': ['Office 365', 'Chrome']
-            };
-            const hardwareDB = [
-                "Core i7, 16GB RAM, 512GB SSD",
-                "Core i5, 8GB RAM, 256GB SSD",
-                "Ryzen 5, 16GB RAM, 1TB SSD",
-                "Core i9, 32GB RAM, 1TB NVMe"
-            ];
+        let faultReports = [
+            { id: 1, lab: 'Lab 101 (FIEC)', pc: 12, description: 'No enciende. Posible problema de fuente.', status: 'recibido', priority: 'alta', evidence: 'falla_fuente.jpg', fixTime: null },
+            { id: 2, lab: 'Lab 103 (FIMCP)', pc: 3, description: 'Sin internet. Cable desconectado.', status: 'en revision', priority: 'media', evidence: null, fixTime: null },
+            { id: 3, lab: 'Lab 101 (FIEC)', pc: 8, description: 'Teclado dañado. Teclas no responden.', status: 'recibido', priority: 'media', evidence: 'tecla_rota.png', fixTime: null },
+            { id: 4, lab: 'Lab 105 (FADCOM)', pc: 5, description: 'Monitor no da imagen.', status: 'resuelto', priority: 'baja', evidence: null, fixTime: '15 min' },
+            { id: 5, lab: 'Lab 102 (FIEC)', pc: 2, description: 'Mouse no funciona.', status: 'recibido', priority: 'baja', evidence: null, fixTime: null },
+            { id: 6, lab: 'Lab 101 (FIEC)', pc: 12, description: 'Pantalla azul al iniciar Windows.', status: 'recibido', priority: 'alta', evidence: 'bsod.jpg', fixTime: null },
+        ];
 
-            const screenInfo = {
-                'screen-login': { title: '👋 Bienvenido', text: 'Ingresa con tu cuenta institucional', dot: 1 },
-                'screen-menu-student': { title: '📱 Menú Estudiante', text: 'Accede a las funciones disponibles para estudiantes', dot: 2 },
-                'screen-menu-support': { title: '🔧 Menú Soporte Técnico', text: 'Gestiona los reportes y equipos del laboratorio', dot: 2 },
-                'screen-lab-list': { title: '🔬 Lista de Laboratorios', text: 'Selecciona un laboratorio o busca por software', dot: 3 },
-                'screen-lab': { title: '🖥️ Disponibilidad de Lab', text: 'Vista en tiempo real del estado de los computadores', dot: 4 },
-                'screen-report': { title: '⚠️ Reportar Problema', text: 'Envía un reporte detallado sobre algún equipo con fallas', dot: 4 },
-                'screen-history': { title: '🔔 Historial de Reportes', text: 'Consulta el estado de tus reportes atendidos', dot: 3 },
-                'screen-faults': { title: '📋 Equipos con Fallas', text: 'Lista de todos los reportes pendientes de atención', dot: 3 },
-                'screen-detail': { title: '🔍 Detalle del Reporte', text: 'Revisa la información del problema y gestiónalo', dot: 4 },
-                'screen-notification': { title: '🔔 Notificación', text: 'Información importante sobre tus acciones', dot: 4 },
-                'screen-dashboard': { title: '📊 Dashboard Soporte', text: 'Métricas de rendimiento de los laboratorios', dot: 3 },
-            };
+        const softwareDB = {
+            'FIEC': ['Python', 'Java', 'Docker', 'VS Code', 'Matlab'],
+            'FIMCP': ['AutoCAD', 'SolidWorks', 'Matlab'],
+            'FADCOM': ['Adobe Illustrator', 'Photoshop', 'Blender'],
+            'FCV': ['RStudio', 'BioPython', 'Office 365'],
+            'FCNM': ['Matlab', 'Python', 'RStudio'],
+            'BIBLIOTECA': ['Office 365', 'Chrome', 'Adobe Reader'],
+            'General': ['Office 365', 'Chrome']
+        };
+        const hardwareDB = [
+            "Core i7, 16GB RAM, 512GB SSD",
+            "Core i5, 8GB RAM, 256GB SSD",
+            "Ryzen 5, 16GB RAM, 1TB SSD",
+            "Core i9, 32GB RAM, 1TB NVMe"
+        ];
 
-            const labFaculties = {
-                101: "FIEC", 102: "FIEC", 103: "FIMCP", 104: "FIMCP", 105: "FADCOM",
-                106: "FADCOM", 107: "FCV", 108: "FCV", 109: "FCNM", 110: "BIBLIOTECA"
-            };
+        const screenInfo = {
+            'screen-login': { title: '👋 Bienvenido', text: 'Ingresa con tu cuenta institucional', dot: 1 },
+            'screen-menu-student': { title: '📱 Menú Estudiante', text: 'Accede a las funciones disponibles para estudiantes', dot: 2 },
+            'screen-menu-support': { title: '🔧 Menú Soporte Técnico', text: 'Gestiona los reportes y equipos del laboratorio', dot: 2 },
+            'screen-lab-list': { title: '🔬 Lista de Laboratorios', text: 'Selecciona un laboratorio o busca por software', dot: 3 },
+            'screen-lab': { title: '🖥️ Disponibilidad de Lab', text: 'Vista en tiempo real del estado de los computadores', dot: 4 },
+            'screen-report': { title: '⚠️ Reportar Problema', text: 'Envía un reporte detallado sobre algún equipo con fallas', dot: 4 },
+            'screen-history': { title: '🔔 Historial de Reportes', text: 'Consulta el estado de tus reportes atendidos', dot: 3 },
+            'screen-faults': { title: '📋 Equipos con Fallas', text: 'Lista de todos los reportes pendientes de atención', dot: 3 },
+            'screen-detail': { title: '🔍 Detalle del Reporte', text: 'Revisa la información del problema y gestiónalo', dot: 4 },
+            'screen-notification': { title: '🔔 Notificación', text: 'Información importante sobre tus acciones', dot: 4 },
+            'screen-dashboard': { title: '📊 Dashboard Soporte', text: 'Métricas de rendimiento de los laboratorios', dot: 3 },
+        };
+
+        const labFaculties = {
+            101: "FIEC", 102: "FIEC", 103: "FIMCP", 104: "FIMCP", 105: "FADCOM",
+            106: "FADCOM", 107: "FCV", 108: "FCV", 109: "FCNM", 110: "BIBLIOTECA"
+        };
 
 
-            // --- INICIALIZACIÓN ---
+        // --- INICIALIZACIÓN ---
 
-            document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeLabs();
+            populateLabSelect();
+            populateFaultFilters();
+            updateFaultList();
+            updateHistoryList();
+            updateScreenInfo();
+            updateNotificationDot();
+            document.getElementById('last-updated').textContent = `Última actualización: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(currentScreen).classList.add('active');
+        });
+
+        // --- LÓGICA DE NAVEGACIÓN ---
+
+        function navigateTo(screenId, animation = 'slide-left', data = null) {
+            const oldScreen = document.getElementById(currentScreen);
+            const newScreen = document.getElementById(screenId);
+
+            if (oldScreen === newScreen) return;
+            if (animation !== 'fade' && animation !== 'slide-right') {
+                previousScreenStack.push({ screen: currentScreen, data: null });
+            }
+            oldScreen.className = 'screen';
+            newScreen.className = 'screen';
+            if (animation === 'slide-left') {
+                oldScreen.classList.add('slide-left-out');
+                newScreen.classList.add('active', 'slide-left-in');
+            } else if (animation === 'slide-right') {
+                oldScreen.classList.add('slide-right-out');
+                newScreen.classList.add('active', 'slide-right-in');
+            } else if (animation === 'fade') {
+                oldScreen.classList.add('fade-out');
+                newScreen.classList.add('active', 'fade-in');
+            }
+            setTimeout(() => {
+                oldScreen.classList.remove('active');
+            }, 400);
+            currentScreen = screenId;
+
+            // Acciones específicas
+            if (screenId === 'screen-lab-list') {
                 initializeLabs();
-                populateLabSelect();
+                renderLabList();
+                if (userRole === 'student') {
+                    renderRecommendationCard();
+                    document.getElementById('prefs-icon-btn').style.display = 'block';
+                } else {
+                    document.getElementById('recommendation-card').style.display = 'none';
+                    document.getElementById('prefs-icon-btn').style.display = 'none';
+                }
+            }
+            if (screenId === 'screen-history') {
+                updateHistoryList();
+            }
+            if (screenId === 'screen-faults') {
                 populateFaultFilters();
                 updateFaultList();
-                updateHistoryList();
-                updateScreenInfo();
-                updateNotificationDot();
-                document.getElementById('last-updated').textContent = `Última actualización: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                document.getElementById(currentScreen).classList.add('active');
-            });
-
-            // --- LÓGICA DE NAVEGACIÓN ---
-
-            function navigateTo(screenId, animation = 'slide-left', data = null) {
-                const oldScreen = document.getElementById(currentScreen);
-                const newScreen = document.getElementById(screenId);
-
-                if (oldScreen === newScreen) return;
-                if (animation !== 'fade' && animation !== 'slide-right') {
-                    previousScreenStack.push({ screen: currentScreen, data: null });
-                }
-                oldScreen.className = 'screen';
-                newScreen.className = 'screen';
-                if (animation === 'slide-left') {
-                    oldScreen.classList.add('slide-left-out');
-                    newScreen.classList.add('active', 'slide-left-in');
-                } else if (animation === 'slide-right') {
-                    oldScreen.classList.add('slide-right-out');
-                    newScreen.classList.add('active', 'slide-right-in');
-                } else if (animation === 'fade') {
-                    oldScreen.classList.add('fade-out');
-                    newScreen.classList.add('active', 'fade-in');
-                }
-                setTimeout(() => {
-                    oldScreen.classList.remove('active');
-                }, 400);
-                currentScreen = screenId;
-
-                // Acciones específicas
-                if (screenId === 'screen-lab-list') {
-                    initializeLabs();
-                    renderLabList();
-                    if (userRole === 'student') {
-                        renderRecommendationCard();
-                        document.getElementById('prefs-icon-btn').style.display = 'block';
-                    } else {
-                        document.getElementById('recommendation-card').style.display = 'none';
-                        document.getElementById('prefs-icon-btn').style.display = 'none';
-                    }
-                }
-                if (screenId === 'screen-history') {
-                    updateHistoryList();
-                }
-                if (screenId === 'screen-faults') {
-                    populateFaultFilters();
-                    updateFaultList();
-                }
-                if (screenId === 'screen-dashboard') {
-                    updateDashboard();
-                }
-                if (screenId === 'screen-roles') {
-                    previousScreenStack = [{ screen: 'screen-roles', data: null }];
-                }
-
-                if (screenId === 'screen-campus-map') {
-                    mapZoom = 1;
-                    setTimeout(applyMapZoom, 0);
-                }
-                updateScreenInfo();
+            }
+            if (screenId === 'screen-dashboard') {
+                updateDashboard();
+            }
+            if (screenId === 'screen-roles') {
+                previousScreenStack = [{ screen: 'screen-roles', data: null }];
             }
 
-            function navigateBack(animation = 'slide-right') {
-                if (currentScreen === 'screen-report') {
-                    const labSelect = document.getElementById('lab-select');
-                    labSelect.disabled = false;
-                    labSelect.value = "";
-                    document.getElementById('pc-number').value = '';
-                    document.getElementById('fault-description').value = '';
-                    simulatedEvidenceFile = null;
-                    const fileNameSpan = document.getElementById('file-name-span');
-                    fileNameSpan.textContent = '';
-                    fileNameSpan.style.display = 'none';
-                }
-
-                const prevState = previousScreenStack.pop();
-                if (prevState) {
-                    navigateTo(prevState.screen, animation, prevState.data);
-                }
+            if (screenId === 'screen-campus-map') {
+                mapZoom = 1;
+                setTimeout(applyMapZoom, 0);
             }
+            updateScreenInfo();
+        }
 
-            // --- MODIFICADO: Ya no es una función global, es parte del login ---
-            function handleLogin() {
-                const email = document.getElementById('login-email').value.toLowerCase();
-                const pass = document.getElementById('login-password').value;
-                const error = document.getElementById('login-error');
-                const btn = document.getElementById('login-button');
-
-                btn.classList.add('loading');
-                btn.disabled = true;
-                error.style.display = 'none';
-
-                setTimeout(() => {
-                    let role = null;
-
-                    if (email === 'estudiante@espol.edu.ec' && pass === 'estudiante') {
-                        role = 'student';
-                        navigateTo('screen-menu-student', 'fade');
-                    } else if (email === 'soporte@espol.edu.ec' && pass === 'soporte') {
-                        role = 'support';
-                        navigateTo('screen-menu-support', 'fade');
-                    } else {
-                        error.textContent = "Correo o contraseña incorrectos.";
-                        error.style.display = 'block';
-                    }
-
-                    userRole = role; // Actualiza el rol global
-                    btn.classList.remove('loading');
-                    btn.disabled = false;
-                }, 1000);
-            }
-
-            function updateScreenInfo() {
-                const info = screenInfo[currentScreen];
-                if (info) {
-                    let title = info.title.split(' ')[1] || "ESPOL";
-                    if (currentScreen === 'screen-lab' && selectedLab) {
-                        title = `${selectedLab.name}`;
-                    }
-
-                    const titleElement = document.getElementById(currentScreen).querySelector('.title');
-                    if (titleElement) {
-                        titleElement.innerHTML = `${title}`;
-                    }
-
-                    // --- MODIFICADO: No mostrar panel de info en el login ---
-                    const infoPanel = document.getElementById('info-panel');
-                    const navDots = document.getElementById('nav-dots');
-
-                    if (currentScreen === 'screen-login') {
-                        infoPanel.style.display = 'none';
-                        navDots.style.display = 'none';
-                    } else {
-                        infoPanel.style.display = 'block';
-                        navDots.style.display = 'flex';
-
-                        document.getElementById('info-title').textContent = info.title;
-                        document.getElementById('info-text').textContent = info.text;
-
-                        document.querySelectorAll('.dot').forEach(dot => {
-                            dot.classList.remove('active');
-                            if (parseInt(dot.dataset.dot) === info.dot) {
-                                dot.classList.add('active');
-                            }
-                        });
-
-                        infoPanel.style.transform = 'translateY(10px)';
-                        infoPanel.style.opacity = '0';
-                        setTimeout(() => {
-                            infoPanel.style.transform = 'translateY(0)';
-                            infoPanel.style.opacity = '1';
-                        }, 100);
-                    }
-                }
-            }
-
-            function updateNotificationDot() {
-                const dot = document.getElementById('notification-dot');
-                if (newNotification) {
-                    dot.classList.remove('hidden');
-                } else {
-                    dot.classList.add('hidden');
-                }
-            }
-
-            function clearNotificationAndNavigate() {
-                newNotification = false;
-                updateNotificationDot();
-                navigateTo('screen-history', 'slide-left');
-            }
-
-            // --- LÓGICA DE PANTALLAS (LABS & FILTRO) ---
-
-            function initializeLabs() {
-                labs = [];
-                const favs = JSON.parse(localStorage.getItem('favoriteLabs')) || [];
-
-                for (let i = 1; i <= 10; i++) {
-                    const id = 100 + i;
-                    const faculty = labFaculties[id] || "General";
-                    const labSoftware = softwareDB[faculty] || softwareDB['General'];
-                    const availablePCs = Math.floor(Math.random() * 10) + 1;
-
-                    labs.push({
-                        id: id,
-                        name: `Lab ${id}`,
-                        faculty: faculty,
-                        favorite: favs.includes(id),
-                        software: labSoftware,
-                        available: availablePCs
-                    });
-                }
-                labs.sort((a, b) => b.favorite - a.favorite || a.id - b.id);
-            }
-
-            function renderRecommendationCard() {
-                const card = document.getElementById('recommendation-card');
-                const cardText = document.getElementById('rec-lab-text');
-
-                if (labs.length === 0) {
-                    card.style.display = 'none';
-                    return;
-                }
-                const bestLab = [...labs].sort((a, b) => b.available - a.available)[0];
-
-                if (bestLab && bestLab.available > 0) {
-                    cardText.textContent = `${bestLab.name} (${bestLab.faculty}) - ${bestLab.available} Libres`;
-                    card.style.display = 'flex';
-                    card.onclick = (e) => {
-                        selectLab(bestLab);
-                    };
-                } else {
-                    card.style.display = 'none';
-                }
-            }
-
-            function renderLabList() {
-                const list = document.getElementById('lab-list');
-                const filter = document.getElementById('lab-search') ? document.getElementById('lab-search').value.toLowerCase() : "";
-                const emptyState = document.getElementById('lab-empty-state');
-                list.innerHTML = '';
-
-                const filteredLabs = labs.filter(lab =>
-                    lab.name.toLowerCase().includes(filter) ||
-                    lab.faculty.toLowerCase().includes(filter) ||
-                    lab.software.some(s => s.toLowerCase().includes(filter))
-                );
-
-                if (filteredLabs.length === 0) {
-                    emptyState.style.display = 'block';
-                } else {
-                    emptyState.style.display = 'none';
-                    filteredLabs.forEach(lab => {
-                        const item = document.createElement('div');
-                        item.className = 'lab-item';
-                        const swTags = lab.software.map(s => {
-                            const isMatch = filter.length > 0 && s.toLowerCase().includes(filter);
-                            return `<span class="sw-tag ${isMatch ? 'highlight' : ''}">${s}</span>`;
-                        }).slice(0, 3).join('');
-
-                        item.innerHTML = `
-                        <div class="lab-item-main" onclick="selectLabById(${lab.id})">
-                            <div class="lab-item-info">
-                                <div class="lab-icon">🔬</div>
-                                <div class="lab-text-container">
-                                    <div class="lab-text">${lab.name}</div>
-                                    <div class="lab-faculty">${lab.faculty}</div>
-                                </div>
-                                <div class="fav-star">${lab.favorite ? '⭐' : '☆'}</div>
-                            </div>
-                            <div class="software-tags">${swTags}</div>
-                        </div>
-                    `;
-                        list.appendChild(item);
-                    });
-                }
-                list.appendChild(emptyState);
-            }
-
-            function filterLabs() {
-                renderLabList();
-            }
-
-            function selectLabById(labId) {
-                const lab = labs.find(l => l.id === labId);
-                if (lab) selectLab(lab);
-            }
-
-            function selectLab(lab) {
-                selectedLab = lab;
-                document.getElementById('lab-detail-title').innerHTML = `${lab.name} (${lab.faculty})`;
-                generatePCGrid();
-                const legend = document.getElementById('status-legend');
-                const infoCard = document.getElementById('lab-info-card');
-
-                if (userRole === 'student') {
-                    legend.classList.add('student-view');
-                    infoCard.style.display = 'block';
-                    const totalPCs = 12;
-                    const available = pcStates.filter(s => s === 'pc-available').length;
-                    const occupationPercent = ((totalPCs - available) / totalPCs) * 100;
-                    document.getElementById('occupation-fill').style.width = `${occupationPercent}%`;
-                    document.getElementById('popular-software-tags').innerHTML = lab.software.slice(0, 3).map(s => `<span class="sw-tag compact">${s}</span>`).join('');
-                } else {
-                    legend.classList.remove('student-view');
-                    infoCard.style.display = 'none';
-                }
-                navigateTo('screen-lab', 'slide-left');
-            }
-
-            function openPrefsModal() {
-                const modal = document.getElementById('prefs-modal');
-                const list = document.getElementById('prefs-lab-list');
-                list.innerHTML = '';
-                labs.sort((a, b) => a.id - b.id);
-                labs.forEach(lab => {
-                    const item = document.createElement('div');
-                    item.className = 'prefs-item';
-                    item.innerHTML = `
-                    <div>
-                        <span>${lab.name}</span>
-                        <span>${lab.faculty}</span>
-                    </div>
-                    <span class="fav-toggle" onclick="toggleFavorite(${lab.id})">
-                        ${lab.favorite ? '⭐' : '☆'}
-                    </span>
-                `;
-                    list.appendChild(item);
-                });
-                modal.style.display = 'flex';
-            }
-
-            function closePrefsModal() {
-                document.getElementById('prefs-modal').style.display = 'none';
-                labs.sort((a, b) => b.favorite - a.favorite || a.id - b.id);
-                renderLabList();
-            }
-
-            function toggleFavorite(labId) {
-                const lab = labs.find(l => l.id === labId);
-                if (lab) {
-                    lab.favorite = !lab.favorite;
-                }
-                const favs = labs.filter(l => l.favorite).map(l => l.id);
-                localStorage.setItem('favoriteLabs', JSON.stringify(favs));
-                openPrefsModal();
-            }
-
-            // --- LÓGICA DE PANTALLAS (PCS y REPORTES) ---
-
-            // --- MODIFICADO: GRID CINE ---
-            function generatePCGrid(isUpdating = false) {
-                const grid = document.getElementById('pc-grid');
-                grid.innerHTML = '';
-                // Config grid para layout Cine
-                grid.style.display = 'grid';
-                grid.style.gridTemplateColumns = 'auto repeat(2, 1fr) 20px repeat(2, 1fr)'; // Label, 2 pcs, pasillo, 2 pcs
-                grid.style.gap = '10px 6px';
-
-                const states = ['pc-available', 'pc-occupied', 'pc-damaged', 'pc-maintenance'];
-                const counts = { 'pc-available': 0, 'pc-occupied': 0, 'pc-damaged': 0, 'pc-maintenance': 0 };
-
-                if (!isUpdating || pcStates.length === 0) {
-                    pcStates = [];
-                    for (let i = 0; i < 12; i++) {
-                        if (i < 5) pcStates.push(states[0]);
-                        else if (i < 8) pcStates.push(states[1]);
-                        else if (i < 10) pcStates.push(states[2]);
-                        else pcStates.push(states[3]);
-                    }
-                    pcStates.sort(() => Math.random() - 0.5);
-                }
-
-                const rows = ['A', 'B', 'C']; // 3 filas de 4 PCs = 12 PCs
-                let pcIndex = 0;
-
-                rows.forEach(rowLabel => {
-                    // Label Fila
-                    const label = document.createElement('div');
-                    label.textContent = rowLabel;
-                    label.className = 'row-label';
-                    grid.appendChild(label);
-
-                    // Renderizar PCs con pasillo
-                    for (let i = 1; i <= 4; i++) {
-                        if (i === 3) { // Pasillo antes de la 3ra PC
-                            const aisle = document.createElement('div');
-                            grid.appendChild(aisle);
-                        }
-
-                        const state = pcStates[pcIndex];
-                        const pcNum = pcIndex + 1;
-
-                        // --- Lógica visual para estudiantes ---
-                        let displayClass = state;
-                        let isClickable = false;
-
-                        if (userRole === 'student') {
-                            // Estudiante solo ve disponibles o su reserva
-                            if (state === 'pc-available') {
-                                displayClass = 'pc-available';
-                                isClickable = true;
-                            } else if (currentReservation && currentReservation.pc === pcNum && currentReservation.lab === selectedLab.name) {
-                                displayClass = 'pc-reserved'; // Color Morado
-                                isClickable = true;
-                            } else {
-                                displayClass = 'pc-occupied'; // Máscara para ocupado/dañado
-                                isClickable = false;
-                            }
-                        } else {
-                            isClickable = true; // Soporte ve todo
-                        }
-
-                        const pcContainer = document.createElement('div');
-                        pcContainer.className = 'pc-item-container';
-                        const pc = document.createElement('div');
-                        pc.className = `pc-icon ${displayClass}`;
-                        if (isUpdating) pc.classList.add('pc-updating');
-                        pc.innerHTML = `<img src="pc-icon.png" alt="PC" class="pc-img">`;
-                        pcContainer.appendChild(pc);
-                        const pcLabel = document.createElement('span');
-                        pcLabel.className = 'pc-label';
-                        pcLabel.textContent = `${rowLabel}-${i}`; // Ej: A-1
-                        pcContainer.appendChild(pcLabel);
-
-                        if (isClickable) {
-                            pcContainer.onclick = () => openPCInfoModal(pcNum, displayClass, rowLabel + '-' + i);
-                        }
-
-                        grid.appendChild(pcContainer);
-
-                        if (userRole !== 'student') counts[state]++; // Count real
-                        else if (state === 'pc-available') counts['pc-available']++; // Student count
-
-                        pcIndex++;
-                    }
-                });
-
-                document.getElementById('available-count').textContent = `Disponible: ${counts['pc-available']}`;
-                document.getElementById('occupied-count').textContent = `En uso: ${counts['pc-occupied']}`;
-                document.getElementById('damaged-count').textContent = `Dañado: ${counts['pc-damaged']}`;
-
-                // Mostrar Leyenda "Tu Reserva" si aplica
-                const legendReserved = document.getElementById('legend-reserved');
-                if (currentReservation && selectedLab.name === currentReservation.lab) {
-                    legendReserved.style.display = 'flex';
-                } else {
-                    legendReserved.style.display = 'none';
-                }
-
-
-                if (isUpdating) {
-                    setTimeout(() => {
-                        document.querySelectorAll('.pc-icon').forEach(pc => pc.classList.remove('pc-updating'));
-                    }, 800);
-                }
-            }
-
-            function updatePCStatus() {
-                const btn = document.getElementById('update-btn');
-                btn.classList.add('loading');
-                btn.disabled = true;
-
-                setTimeout(() => {
-                    pcStates = pcStates.map(state => {
-                        if (state === 'pc-available' || state === 'pc-occupied') {
-                            if (Math.random() < 0.3) {
-                                return state === 'pc-available' ? 'pc-occupied' : 'pc-available';
-                            }
-                        }
-                        return state;
-                    });
-                    generatePCGrid(true);
-
-                    btn.classList.remove('loading');
-                    btn.disabled = false;
-                    document.getElementById('last-updated').textContent = `Última actualización: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
-                }, 1000);
-            }
-
-            function populateLabSelect() {
-                const select = document.getElementById('lab-select');
-                select.innerHTML = '<option value="">Seleccione un laboratorio...</option>';
-                labs.sort((a, b) => a.id - b.id).forEach(lab => {
-                    const option = document.createElement('option');
-                    option.value = `${lab.name} (${lab.faculty})`;
-                    option.textContent = `${lab.name} (${lab.faculty})`;
-                    select.appendChild(option);
-                });
-            }
-
-            function openReportScreen() {
-                navigateTo('screen-report', 'slide-left');
+        function navigateBack(animation = 'slide-right') {
+            if (currentScreen === 'screen-report') {
                 const labSelect = document.getElementById('lab-select');
                 labSelect.disabled = false;
                 labSelect.value = "";
@@ -3183,643 +2963,1359 @@
                 fileNameSpan.style.display = 'none';
             }
 
-            function simulateFileUpload() {
-                simulatedEvidenceFile = `evidencia_${Date.now() % 1000}.jpg`;
-                const fileNameSpan = document.getElementById('file-name-span');
-                fileNameSpan.textContent = `✔️ Archivo adjunto: ${simulatedEvidenceFile}`;
-                fileNameSpan.style.display = 'block';
+            const prevState = previousScreenStack.pop();
+            if (prevState) {
+                navigateTo(prevState.screen, animation, prevState.data);
             }
+        }
 
-            function submitReport() {
-                const labName = document.getElementById('lab-select').value;
-                const pc = document.getElementById('pc-number').value;
-                const desc = document.getElementById('fault-description').value;
-                const btn = document.getElementById('submit-report-btn');
+        // --- MODIFICADO: Ya no es una función global, es parte del login ---
+        function handleLogin() {
+            const email = document.getElementById('login-email').value.toLowerCase();
+            const pass = document.getElementById('login-password').value;
+            const error = document.getElementById('login-error');
+            const btn = document.getElementById('login-button');
 
-                if (!labName || !pc || !desc) {
-                    showNotification('Error', 'Por favor completa todos los campos.', '⚠️');
-                    return;
+            btn.classList.add('loading');
+            btn.disabled = true;
+            error.style.display = 'none';
+
+            setTimeout(() => {
+                let role = null;
+
+                if (email === 'estudiante@espol.edu.ec' && pass === 'estudiante') {
+                    role = 'student';
+                    navigateTo('screen-menu-student', 'fade');
+                } else if (email === 'soporte@espol.edu.ec' && pass === 'soporte') {
+                    role = 'support';
+                    navigateTo('screen-menu-support', 'fade');
+                } else {
+                    error.textContent = "Correo o contraseña incorrectos.";
+                    error.style.display = 'block';
                 }
 
-                btn.classList.add('loading');
-                btn.disabled = true;
+                userRole = role; // Actualiza el rol global
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }, 1000);
+        }
 
-                setTimeout(() => {
-                    const priorities = ['baja', 'media', 'alta'];
-                    const newReport = {
-                        id: faultReports.length + Date.now(),
-                        lab: labName,
-                        pc: parseInt(pc),
-                        description: desc,
-                        status: 'recibido',
-                        evidence: simulatedEvidenceFile,
-                        priority: priorities[Math.floor(Math.random() * 3)],
-                        fixTime: null
-                    };
+        function updateScreenInfo() {
+            const info = screenInfo[currentScreen];
+            if (info) {
+                let title = info.title.split(' ')[1] || "ESPOL";
+                if (currentScreen === 'screen-lab' && selectedLab) {
+                    title = `${selectedLab.name}`;
+                }
 
-                    faultReports.unshift(newReport);
-                    updateFaultList();
+                const titleElement = document.getElementById(currentScreen).querySelector('.title');
+                if (titleElement) {
+                    titleElement.innerHTML = `${title}`;
+                }
 
-                    if (selectedLab && labName === `${selectedLab.name} (${selectedLab.faculty})` && pc <= pcStates.length) {
-                        pcStates[pc - 1] = 'pc-damaged';
-                        generatePCGrid(false);
-                    }
+                // --- MODIFICADO: No mostrar panel de info en el login ---
+                const infoPanel = document.getElementById('info-panel');
+                const navDots = document.getElementById('nav-dots');
 
-                    // Limpiar form
-                    document.getElementById('lab-select').disabled = false;
-                    document.getElementById('lab-select').value = "";
-                    document.getElementById('pc-number').value = '';
-                    document.getElementById('fault-description').value = '';
-                    simulatedEvidenceFile = null;
-                    const fileNameSpan = document.getElementById('file-name-span');
-                    fileNameSpan.textContent = '';
-                    fileNameSpan.style.display = 'none';
+                if (currentScreen === 'screen-login') {
+                    infoPanel.style.display = 'none';
+                    navDots.style.display = 'none';
+                } else {
+                    infoPanel.style.display = 'block';
+                    navDots.style.display = 'flex';
 
-                    btn.classList.remove('loading');
-                    btn.disabled = false;
+                    document.getElementById('info-title').textContent = info.title;
+                    document.getElementById('info-text').textContent = info.text;
 
-                    showNotification('Reporte Enviado', 'Tu reporte ha sido recibido y será atendido pronto.', '🔔');
-                }, 1000);
+                    document.querySelectorAll('.dot').forEach(dot => {
+                        dot.classList.remove('active');
+                        if (parseInt(dot.dataset.dot) === info.dot) {
+                            dot.classList.add('active');
+                        }
+                    });
+
+                    infoPanel.style.transform = 'translateY(10px)';
+                    infoPanel.style.opacity = '0';
+                    setTimeout(() => {
+                        infoPanel.style.transform = 'translateY(0)';
+                        infoPanel.style.opacity = '1';
+                    }, 100);
+                }
             }
+        }
 
-            function populateFaultFilters() {
-                const labFilter = document.getElementById('filter-lab');
-                labFilter.innerHTML = '<option value="">Todos los Labs</option>'; // Reset
+        function updateNotificationDot() {
+            const dot = document.getElementById('notification-dot');
+            if (newNotification) {
+                dot.classList.remove('hidden');
+            } else {
+                dot.classList.add('hidden');
+            }
+        }
 
-                const uniqueLabs = [...new Set(faultReports.map(r => r.lab.split(' ')[0] + ' ' + r.lab.split(' ')[1]))]; // "Lab 101"
+        function clearNotificationAndNavigate() {
+            newNotification = false;
+            updateNotificationDot();
+            navigateTo('screen-history', 'slide-left');
+        }
 
-                uniqueLabs.forEach(labName => {
-                    const option = document.createElement('option');
-                    option.value = labName;
-                    option.textContent = labName;
-                    labFilter.appendChild(option);
+        // --- LÓGICA DE PANTALLAS (LABS & FILTRO) ---
+
+        function initializeLabs() {
+            labs = [];
+            const favs = JSON.parse(localStorage.getItem('favoriteLabs')) || [];
+
+            for (let i = 1; i <= 10; i++) {
+                const id = 100 + i;
+                const faculty = labFaculties[id] || "General";
+                const labSoftware = softwareDB[faculty] || softwareDB['General'];
+                const availablePCs = Math.floor(Math.random() * 10) + 1;
+
+                labs.push({
+                    id: id,
+                    name: `Lab ${id}`,
+                    faculty: faculty,
+                    favorite: favs.includes(id),
+                    software: labSoftware,
+                    available: availablePCs
                 });
             }
+            labs.sort((a, b) => b.favorite - a.favorite || a.id - b.id);
+        }
 
-            function updateFaultList() {
-                const list = document.getElementById('fault-list');
-                const emptyState = document.getElementById('fault-empty-state');
-                list.innerHTML = '';
+        function renderRecommendationCard() {
+            const card = document.getElementById('recommendation-card');
+            const cardText = document.getElementById('rec-lab-text');
 
-                const labFilter = document.getElementById('filter-lab').value;
-                const priorityFilter = document.getElementById('filter-priority').value;
-                let filteredReports = faultReports.filter(r => r.status !== 'resuelto');
-                if (labFilter) {
-                    filteredReports = filteredReports.filter(r => r.lab.startsWith(labFilter));
+            if (labs.length === 0) {
+                card.style.display = 'none';
+                return;
+            }
+            const bestLab = [...labs].sort((a, b) => b.available - a.available)[0];
+
+            if (bestLab && bestLab.available > 0) {
+                cardText.textContent = `${bestLab.name} (${bestLab.faculty}) - ${bestLab.available} Libres`;
+                card.style.display = 'flex';
+                card.onclick = (e) => {
+                    selectLab(bestLab);
+                };
+            } else {
+                card.style.display = 'none';
+            }
+        }
+
+        function renderLabList() {
+            const list = document.getElementById('lab-list');
+            // Obtenemos los valores de los filtros
+            const filterText = document.getElementById('lab-search') ? document.getElementById('lab-search').value.toLowerCase() : "";
+            const currentLocation = document.getElementById('location-select') ? document.getElementById('location-select').value : "";
+
+            const emptyState = document.getElementById('lab-empty-state');
+            list.innerHTML = '';
+
+            // Creamos una COPIA de los laboratorios para no dañar el orden original global
+            let displayLabs = [...labs];
+
+            // LOGICA DE ORDENAMIENTO INTELIGENTE:
+            // 1. Si hay ubicación seleccionada, esos van primero.
+            // 2. Luego los favoritos.
+            // 3. Luego por ID.
+            displayLabs.sort((a, b) => {
+                // Puntos de prioridad
+                let scoreA = 0;
+                let scoreB = 0;
+
+                // Si coincide con la ubicación actual, gana 100 puntos
+                if (currentLocation && a.faculty === currentLocation) scoreA += 100;
+                if (currentLocation && b.faculty === currentLocation) scoreB += 100;
+
+                // Si es favorito, gana 10 puntos
+                if (a.favorite) scoreA += 10;
+                if (b.favorite) scoreB += 10;
+
+                // Ordenamos de mayor puntaje a menor
+                return scoreB - scoreA || a.id - b.id;
+            });
+
+            // Filtramos por texto (software o nombre)
+            const filteredLabs = displayLabs.filter(lab =>
+                lab.name.toLowerCase().includes(filterText) ||
+                lab.faculty.toLowerCase().includes(filterText) ||
+                lab.software.some(s => s.toLowerCase().includes(filterText))
+            );
+
+            if (filteredLabs.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                filteredLabs.forEach(lab => {
+                    const item = document.createElement('div');
+                    item.className = 'lab-item';
+
+                    // Verificamos si este lab está "Cerca de mí" para ponerle un badge visual
+                    const isNear = currentLocation && lab.faculty === currentLocation;
+
+                    const swTags = lab.software.map(s => {
+                        const isMatch = filterText.length > 0 && s.toLowerCase().includes(filterText);
+                        return `<span class="sw-tag ${isMatch ? 'highlight' : ''}">${s}</span>`;
+                    }).slice(0, 3).join('');
+
+                    // HTML del item (Con badge de 'Cerca de ti' si aplica)
+                    item.innerHTML = `
+                        <div class="lab-item-main" onclick="selectLabById(${lab.id})">
+                            <div class="lab-item-info">
+                                <div class="lab-icon">🔬</div>
+                                <div class="lab-text-container">
+                                    <div class="lab-text">
+                                        ${lab.name}
+                                        ${isNear ? '<span style="font-size:10px; background:#D1FAE5; color:#065F46; padding:2px 6px; border-radius:4px; margin-left:5px;">📍 Cerca de ti</span>' : ''}
+                                    </div>
+                                    <div class="lab-faculty">${lab.faculty}</div>
+                                </div>
+                                <div class="fav-star">${lab.favorite ? '⭐' : '☆'}</div>
+                            </div>
+                            <div class="software-tags">${swTags}</div>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+            list.appendChild(emptyState);
+        }
+
+        function filterLabs() {
+            renderLabList();
+        }
+
+        function selectLabById(labId) {
+            const lab = labs.find(l => l.id === labId);
+            if (lab) selectLab(lab);
+        }
+
+        function selectLab(lab) {
+            selectedLab = lab;
+            document.getElementById('lab-detail-title').innerHTML = `${lab.name} (${lab.faculty})`;
+            generatePCGrid();
+            const legend = document.getElementById('status-legend');
+            const infoCard = document.getElementById('lab-info-card');
+
+            if (userRole === 'student') {
+                legend.classList.add('student-view');
+                infoCard.style.display = 'block';
+                const totalPCs = 12;
+                const available = pcStates.filter(s => s === 'pc-available').length;
+                const occupationPercent = ((totalPCs - available) / totalPCs) * 100;
+                document.getElementById('occupation-fill').style.width = `${occupationPercent}%`;
+                document.getElementById('popular-software-tags').innerHTML = lab.software.slice(0, 3).map(s => `<span class="sw-tag compact">${s}</span>`).join('');
+            } else {
+                legend.classList.remove('student-view');
+                infoCard.style.display = 'none';
+            }
+            navigateTo('screen-lab', 'slide-left');
+        }
+
+        function openPrefsModal() {
+            const modal = document.getElementById('prefs-modal');
+            const list = document.getElementById('prefs-lab-list');
+            list.innerHTML = '';
+            labs.sort((a, b) => a.id - b.id);
+            labs.forEach(lab => {
+                const item = document.createElement('div');
+                item.className = 'prefs-item';
+                item.innerHTML = `
+                    <div>
+                        <span>${lab.name}</span>
+                        <span>${lab.faculty}</span>
+                    </div>
+                    <span class="fav-toggle" onclick="toggleFavorite(${lab.id})">
+                        ${lab.favorite ? '⭐' : '☆'}
+                    </span>
+                `;
+                list.appendChild(item);
+            });
+            modal.style.display = 'flex';
+        }
+
+        function closePrefsModal() {
+            document.getElementById('prefs-modal').style.display = 'none';
+            labs.sort((a, b) => b.favorite - a.favorite || a.id - b.id);
+            renderLabList();
+        }
+
+        function toggleFavorite(labId) {
+            const lab = labs.find(l => l.id === labId);
+            if (lab) {
+                lab.favorite = !lab.favorite;
+            }
+            const favs = labs.filter(l => l.favorite).map(l => l.id);
+            localStorage.setItem('favoriteLabs', JSON.stringify(favs));
+            openPrefsModal();
+        }
+
+        // --- LÓGICA DE PANTALLAS (PCS y REPORTES) ---
+
+        // --- MODIFICADO: GRID CINE ---
+        function generatePCGrid(isUpdating = false) {
+            const grid = document.getElementById('pc-grid');
+            grid.innerHTML = '';
+            // Config grid para layout Cine
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = 'auto repeat(2, 1fr) 20px repeat(2, 1fr)'; // Label, 2 pcs, pasillo, 2 pcs
+            grid.style.gap = '10px 6px';
+
+            const states = ['pc-available', 'pc-occupied', 'pc-damaged', 'pc-maintenance'];
+            const counts = { 'pc-available': 0, 'pc-occupied': 0, 'pc-damaged': 0, 'pc-maintenance': 0 };
+
+            if (!isUpdating || pcStates.length === 0) {
+                pcStates = [];
+                for (let i = 0; i < 12; i++) {
+                    if (i < 5) pcStates.push(states[0]);
+                    else if (i < 8) pcStates.push(states[1]);
+                    else if (i < 10) pcStates.push(states[2]);
+                    else pcStates.push(states[3]);
                 }
-                if (priorityFilter) {
-                    filteredReports = filteredReports.filter(r => r.priority === priorityFilter);
-                }
-                const groupedReports = filteredReports.reduce((acc, report) => {
-                    const key = `${report.lab}-PC${report.pc}`;
-                    if (!acc[key]) {
-                        acc[key] = {
-                            key: key,
-                            lab: report.lab,
-                            pc: report.pc,
-                            priority: report.priority,
-                            count: 0,
-                            reports: []
-                        };
+                pcStates.sort(() => Math.random() - 0.5);
+            }
+
+            const rows = ['A', 'B', 'C']; // 3 filas de 4 PCs = 12 PCs
+            let pcIndex = 0;
+
+            rows.forEach(rowLabel => {
+                // Label Fila
+                const label = document.createElement('div');
+                label.textContent = rowLabel;
+                label.className = 'row-label';
+                grid.appendChild(label);
+
+                // Renderizar PCs con pasillo
+                for (let i = 1; i <= 4; i++) {
+                    if (i === 3) { // Pasillo antes de la 3ra PC
+                        const aisle = document.createElement('div');
+                        grid.appendChild(aisle);
                     }
-                    acc[key].count++;
-                    acc[key].reports.push(report);
-                    return acc;
-                }, {});
 
-                const reportGroups = Object.values(groupedReports);
+                    const state = pcStates[pcIndex];
+                    const pcNum = pcIndex + 1;
 
-                if (reportGroups.length === 0) {
-                    emptyState.style.display = 'block';
-                } else {
-                    emptyState.style.display = 'none';
-                    reportGroups.sort((a, b) => {
-                        const priorityOrder = { 'alta': 3, 'media': 2, 'baja': 1 };
-                        return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
-                    });
-                    reportGroups.forEach(group => {
-                        const item = document.createElement('div');
-                        item.className = 'list-item clickable';
-                        const latestDescription = group.reports[0].description;
-                        const latestStatus = group.reports.some(r => r.status === 'en revision') ? 'en revision' : 'recibido';
-                        item.innerHTML = `
+                    // --- Lógica visual para estudiantes ---
+                    let displayClass = state;
+                    let isClickable = false;
+
+                    if (userRole === 'student') {
+                        // 1. PRIMERO verificamos si es TU reserva (para que se ponga morado)
+                        if (currentReservation && currentReservation.pc === pcNum && currentReservation.lab === selectedLab.name) {
+                            displayClass = 'pc-reserved'; // Prioridad: Color Morado
+                            isClickable = true;
+                        }
+                        // 2. LUEGO verificamos si está libre
+                        else if (state === 'pc-available') {
+                            displayClass = 'pc-available'; // Verde
+                            isClickable = true;
+                        }
+                        // 3. Si no es ninguno, está ocupado/dañado
+                        else {
+                            displayClass = 'pc-occupied'; // Máscara para ocupado/dañado
+                            isClickable = false;
+                        }
+                    } else {
+                        isClickable = true; // Soporte ve todo real
+                    }
+
+                    const pcContainer = document.createElement('div');
+                    pcContainer.className = 'pc-item-container';
+                    const pc = document.createElement('div');
+                    pc.className = `pc-icon ${displayClass}`;
+                    if (isUpdating) pc.classList.add('pc-updating');
+                    pc.innerHTML = `<img src="pc-icon.png" alt="PC" class="pc-img">`;
+                    pcContainer.appendChild(pc);
+                    const pcLabel = document.createElement('span');
+                    pcLabel.className = 'pc-label';
+                    pcLabel.textContent = `${rowLabel}-${i}`; // Ej: A-1
+                    pcContainer.appendChild(pcLabel);
+
+                    if (isClickable) {
+                        pcContainer.onclick = () => openPCInfoModal(pcNum, displayClass, rowLabel + '-' + i);
+                    }
+
+                    grid.appendChild(pcContainer);
+
+                    if (userRole !== 'student') counts[state]++; // Count real
+                    else if (state === 'pc-available') counts['pc-available']++; // Student count
+
+                    pcIndex++;
+                }
+            });
+
+            document.getElementById('available-count').textContent = `Disponible: ${counts['pc-available']}`;
+            document.getElementById('occupied-count').textContent = `En uso: ${counts['pc-occupied']}`;
+            document.getElementById('damaged-count').textContent = `Dañado: ${counts['pc-damaged']}`;
+
+            // Mostrar Leyenda "Tu Reserva" si aplica
+            const legendReserved = document.getElementById('legend-reserved');
+            if (currentReservation && selectedLab.name === currentReservation.lab) {
+                legendReserved.style.display = 'flex';
+            } else {
+                legendReserved.style.display = 'none';
+            }
+
+
+            if (isUpdating) {
+                setTimeout(() => {
+                    document.querySelectorAll('.pc-icon').forEach(pc => pc.classList.remove('pc-updating'));
+                }, 800);
+            }
+        }
+
+        function updatePCStatus() {
+            const btn = document.getElementById('update-btn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            setTimeout(() => {
+                pcStates = pcStates.map(state => {
+                    if (state === 'pc-available' || state === 'pc-occupied') {
+                        if (Math.random() < 0.3) {
+                            return state === 'pc-available' ? 'pc-occupied' : 'pc-available';
+                        }
+                    }
+                    return state;
+                });
+                generatePCGrid(true);
+
+                btn.classList.remove('loading');
+                btn.disabled = false;
+                document.getElementById('last-updated').textContent = `Última actualización: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+            }, 1000);
+        }
+
+        function populateLabSelect() {
+            const select = document.getElementById('lab-select');
+            select.innerHTML = '<option value="">Seleccione un laboratorio...</option>';
+            labs.sort((a, b) => a.id - b.id).forEach(lab => {
+                const option = document.createElement('option');
+                option.value = `${lab.name} (${lab.faculty})`;
+                option.textContent = `${lab.name} (${lab.faculty})`;
+                select.appendChild(option);
+            });
+        }
+
+        function openReportScreen() {
+            navigateTo('screen-report', 'slide-left');
+            const labSelect = document.getElementById('lab-select');
+            labSelect.disabled = false;
+            labSelect.value = "";
+            document.getElementById('pc-number').value = '';
+            document.getElementById('fault-description').value = '';
+            simulatedEvidenceFile = null;
+            const fileNameSpan = document.getElementById('file-name-span');
+            fileNameSpan.textContent = '';
+            fileNameSpan.style.display = 'none';
+        }
+
+        function simulateFileUpload() {
+            simulatedEvidenceFile = `evidencia_${Date.now() % 1000}.jpg`;
+            const fileNameSpan = document.getElementById('file-name-span');
+            fileNameSpan.textContent = `✔️ Archivo adjunto: ${simulatedEvidenceFile}`;
+            fileNameSpan.style.display = 'block';
+        }
+
+        function submitReport() {
+            const labName = document.getElementById('lab-select').value;
+            const pc = document.getElementById('pc-number').value;
+            const desc = document.getElementById('fault-description').value;
+            const btn = document.getElementById('submit-report-btn');
+
+            if (!labName || !pc || !desc) {
+                showNotification('Error', 'Por favor completa todos los campos.', '⚠️');
+                return;
+            }
+
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            setTimeout(() => {
+                const priorities = ['baja', 'media', 'alta'];
+                const newReport = {
+                    id: faultReports.length + Date.now(),
+                    lab: labName,
+                    pc: parseInt(pc),
+                    description: desc,
+                    status: 'recibido',
+                    evidence: simulatedEvidenceFile,
+                    priority: priorities[Math.floor(Math.random() * 3)],
+                    fixTime: null
+                };
+
+                faultReports.unshift(newReport);
+                updateFaultList();
+
+                if (selectedLab && labName === `${selectedLab.name} (${selectedLab.faculty})` && pc <= pcStates.length) {
+                    pcStates[pc - 1] = 'pc-damaged';
+                    generatePCGrid(false);
+                }
+
+                // Limpiar form
+                document.getElementById('lab-select').disabled = false;
+                document.getElementById('lab-select').value = "";
+                document.getElementById('pc-number').value = '';
+                document.getElementById('fault-description').value = '';
+                simulatedEvidenceFile = null;
+                const fileNameSpan = document.getElementById('file-name-span');
+                fileNameSpan.textContent = '';
+                fileNameSpan.style.display = 'none';
+
+                btn.classList.remove('loading');
+                btn.disabled = false;
+
+                showNotification('Reporte Enviado', 'Tu reporte ha sido recibido y será atendido pronto.', '🔔');
+
+                // --- NUEVO: Efectos de celebración por colaborar ---
+                fireConfetti();
+                playSound('success');
+            }, 1000);
+        }
+
+        function populateFaultFilters() {
+            const labFilter = document.getElementById('filter-lab');
+            labFilter.innerHTML = '<option value="">Todos los Labs</option>'; // Reset
+
+            const uniqueLabs = [...new Set(faultReports.map(r => r.lab.split(' ')[0] + ' ' + r.lab.split(' ')[1]))]; // "Lab 101"
+
+            uniqueLabs.forEach(labName => {
+                const option = document.createElement('option');
+                option.value = labName;
+                option.textContent = labName;
+                labFilter.appendChild(option);
+            });
+        }
+
+        function updateFaultList() {
+            const list = document.getElementById('fault-list');
+            const emptyState = document.getElementById('fault-empty-state');
+            list.innerHTML = '';
+
+            const labFilter = document.getElementById('filter-lab').value;
+            const priorityFilter = document.getElementById('filter-priority').value;
+            let filteredReports = faultReports.filter(r => r.status !== 'resuelto');
+            if (labFilter) {
+                filteredReports = filteredReports.filter(r => r.lab.startsWith(labFilter));
+            }
+            if (priorityFilter) {
+                filteredReports = filteredReports.filter(r => r.priority === priorityFilter);
+            }
+            const groupedReports = filteredReports.reduce((acc, report) => {
+                const key = `${report.lab}-PC${report.pc}`;
+                if (!acc[key]) {
+                    acc[key] = {
+                        key: key,
+                        lab: report.lab,
+                        pc: report.pc,
+                        priority: report.priority,
+                        count: 0,
+                        reports: []
+                    };
+                }
+                acc[key].count++;
+                acc[key].reports.push(report);
+                return acc;
+            }, {});
+
+            const reportGroups = Object.values(groupedReports);
+
+            if (reportGroups.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                reportGroups.sort((a, b) => {
+                    const priorityOrder = { 'alta': 3, 'media': 2, 'baja': 1 };
+                    return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+                });
+                reportGroups.forEach(group => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item clickable';
+                    const latestDescription = group.reports[0].description;
+                    const latestStatus = group.reports.some(r => r.status === 'en revision') ? 'en revision' : 'recibido';
+                    item.innerHTML = `
                         ${group.count > 1 ? `<span class="report-group-count">x${group.count}</span>` : ''}
                         <div class="list-title">${group.lab} - PC ${group.pc}</div>
                         <div class="list-desc">${latestDescription}</div>
                         <div class="status-badge status-${latestStatus.replace(' ', '.')}">${latestStatus.charAt(0).toUpperCase() + latestStatus.slice(1)}</div>
                     `;
-                        item.onclick = () => showFaultDetail(group.key);
-                        list.appendChild(item);
-                    });
-                }
-                list.appendChild(emptyState);
-                const pendingCount = filteredReports.length;
-                document.getElementById('fault-badge').textContent = pendingCount;
-                document.getElementById('fault-badge').style.display = pendingCount > 0 ? 'flex' : 'none';
+                    item.onclick = () => showFaultDetail(group.key);
+                    list.appendChild(item);
+                });
+            }
+            list.appendChild(emptyState);
+            const pendingCount = filteredReports.length;
+            document.getElementById('fault-badge').textContent = pendingCount;
+            document.getElementById('fault-badge').style.display = pendingCount > 0 ? 'flex' : 'none';
+        }
+
+        function updateHistoryList() {
+            const list = document.getElementById('history-list');
+            const emptyState = document.getElementById('history-empty-state');
+            const activeResCard = document.getElementById('active-reservation-card');
+
+            // --- NUEVO: Mostrar Reserva Activa ---
+            if (currentReservation) {
+                activeResCard.style.display = 'block';
+                document.getElementById('hist-res-pc').innerText = `${currentReservation.lab} - ${currentReservation.seatId}`;
+                document.getElementById('hist-res-time').innerText = currentReservation.time;
+            } else {
+                activeResCard.style.display = 'none';
             }
 
-            function updateHistoryList() {
-                const list = document.getElementById('history-list');
-                const emptyState = document.getElementById('history-empty-state');
-                const activeResCard = document.getElementById('active-reservation-card');
+            list.innerHTML = '';
 
-                // --- NUEVO: Mostrar Reserva Activa ---
-                if (currentReservation) {
-                    activeResCard.style.display = 'block';
-                    document.getElementById('hist-res-pc').innerText = `${currentReservation.lab} - ${currentReservation.seatId}`;
-                    document.getElementById('hist-res-time').innerText = currentReservation.time;
-                } else {
-                    activeResCard.style.display = 'none';
-                }
+            const allReports = faultReports;
 
-                list.innerHTML = '';
-
-                const allReports = faultReports;
-
-                if (allReports.length === 0) {
-                    emptyState.style.display = 'block';
-                } else {
-                    emptyState.style.display = 'none';
-                    allReports.sort((a, b) => b.id - a.id).forEach(report => {
-                        const item = document.createElement('div');
-                        item.className = 'list-item';
-                        const statusText = report.status.charAt(0).toUpperCase() + report.status.slice(1);
-                        item.innerHTML = `
+            if (allReports.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                allReports.sort((a, b) => b.id - a.id).forEach(report => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    const statusText = report.status.charAt(0).toUpperCase() + report.status.slice(1);
+                    item.innerHTML = `
                         <div class="list-title">${report.lab} - PC ${report.pc}</div>
                         <div class="list-desc">${report.description}</div>
                         <div class="status-badge status-${report.status.replace(' ', '.')}">${statusText}</div>
                         ${report.fixTime ? `<div class="history-fix-time">Tiempo de reparación: ${report.fixTime}</div>` : ''}
                     `;
-                        list.appendChild(item);
-                    });
-                }
-                list.appendChild(emptyState);
-            }
-
-            function showFaultDetail(reportKey) {
-                const report = faultReports.find(r => `${r.lab}-PC${r.pc}` === reportKey);
-                if (!report) return;
-                selectedFaultKey = reportKey;
-                const groupCount = faultReports.filter(r => `${r.lab}-PC${r.pc}` === reportKey && r.status !== 'resuelto').length;
-                document.getElementById('detail-title').textContent = `${report.lab} - PC ${report.pc} ${groupCount > 1 ? `(x${groupCount} reportes)` : ''}`;
-                document.getElementById('detail-description').textContent = report.description;
-                const pcIcon = document.getElementById('detail-pc-icon');
-                pcIcon.className = 'pc-icon-large pc-damaged';
-                const evidenceSection = document.getElementById('detail-evidence-section');
-                if (report.evidence) {
-                    document.getElementById('detail-evidence-link').textContent = `📁 ${report.evidence}`;
-                    evidenceSection.style.display = 'block';
-                } else {
-                    evidenceSection.style.display = 'none';
-                }
-                navigateTo('screen-detail', 'slide-left');
-            }
-
-            function openFixModal() {
-                if (!selectedFaultKey) return;
-                document.getElementById('report-status-select').value = 'en revision';
-                document.getElementById('report-time-input').value = '';
-                document.getElementById('time-input-group').style.display = 'none';
-                document.getElementById('fix-time-modal').style.display = 'flex';
-            }
-
-            function closeFixModal() {
-                document.getElementById('fix-time-modal').style.display = 'none';
-            }
-
-            function toggleTimeInput(status) {
-                const timeGroup = document.getElementById('time-input-group');
-                if (status === 'en proceso') {
-                    timeGroup.style.display = 'block';
-                } else {
-                    timeGroup.style.display = 'none';
-                }
-            }
-
-            function confirmFix() {
-                if (!selectedFaultKey) return;
-                const newStatus = document.getElementById('report-status-select').value;
-                let time = null;
-
-                if (newStatus === 'en proceso') {
-                    time = document.getElementById('report-time-input').value;
-                    if (!time) {
-                        alert("Por favor, ingresa un tiempo estimado de reparación.");
-                        return;
-                    }
-                }
-
-                let affectedReports = [];
-                faultReports.forEach(report => {
-                    if (`${report.lab}-PC${report.pc}` === selectedFaultKey && report.status !== 'resuelto') {
-                        report.status = newStatus;
-                        if (newStatus === 'en proceso') {
-                            report.fixTime = time;
-                        }
-                        affectedReports.push(report);
-                    }
+                    list.appendChild(item);
                 });
-                if (affectedReports.length === 0) {
-                    closeFixModal();
+            }
+            list.appendChild(emptyState);
+        }
+
+        function showFaultDetail(reportKey) {
+            const report = faultReports.find(r => `${r.lab}-PC${r.pc}` === reportKey);
+            if (!report) return;
+            selectedFaultKey = reportKey;
+            const groupCount = faultReports.filter(r => `${r.lab}-PC${r.pc}` === reportKey && r.status !== 'resuelto').length;
+            document.getElementById('detail-title').textContent = `${report.lab} - PC ${report.pc} ${groupCount > 1 ? `(x${groupCount} reportes)` : ''}`;
+            document.getElementById('detail-description').textContent = report.description;
+            const pcIcon = document.getElementById('detail-pc-icon');
+            pcIcon.className = 'pc-icon-large pc-damaged';
+            const evidenceSection = document.getElementById('detail-evidence-section');
+            if (report.evidence) {
+                document.getElementById('detail-evidence-link').textContent = `📁 ${report.evidence}`;
+                evidenceSection.style.display = 'block';
+            } else {
+                evidenceSection.style.display = 'none';
+            }
+            navigateTo('screen-detail', 'slide-left');
+        }
+
+        function openFixModal() {
+            if (!selectedFaultKey) return;
+            document.getElementById('report-status-select').value = 'en revision';
+            document.getElementById('report-time-input').value = '';
+            document.getElementById('time-input-group').style.display = 'none';
+            document.getElementById('fix-time-modal').style.display = 'flex';
+        }
+
+        function closeFixModal() {
+            document.getElementById('fix-time-modal').style.display = 'none';
+        }
+
+        function toggleTimeInput(status) {
+            const timeGroup = document.getElementById('time-input-group');
+            if (status === 'en proceso') {
+                timeGroup.style.display = 'block';
+            } else {
+                timeGroup.style.display = 'none';
+            }
+        }
+
+        function confirmFix() {
+            if (!selectedFaultKey) return;
+            const newStatus = document.getElementById('report-status-select').value;
+            let time = null;
+
+            if (newStatus === 'en proceso') {
+                time = document.getElementById('report-time-input').value;
+                if (!time) {
+                    alert("Por favor, ingresa un tiempo estimado de reparación.");
                     return;
                 }
-                const report = affectedReports[0];
-                if (newStatus === 'resuelto') {
-                    if (selectedLab && report.lab === `${selectedLab.name} (${selectedLab.faculty})` && report.pc <= pcStates.length) {
-                        pcStates[report.pc - 1] = 'pc-available';
-                        generatePCGrid(false);
+            }
+
+            let affectedReports = [];
+            faultReports.forEach(report => {
+                if (`${report.lab}-PC${report.pc}` === selectedFaultKey && report.status !== 'resuelto') {
+                    report.status = newStatus;
+                    if (newStatus === 'en proceso') {
+                        report.fixTime = time;
                     }
-                    newNotification = true;
-                    updateNotificationDot();
+                    affectedReports.push(report);
                 }
-                selectedFaultKey = null;
-                updateFaultList();
+            });
+            if (affectedReports.length === 0) {
                 closeFixModal();
-                showNotification(
-                    'Reporte Actualizado',
-                    `El reporte para la PC ${report.pc} ha sido marcado como "${newStatus}".`,
-                    '✅'
-                );
+                return;
             }
-
-            function showNotification(title, message, icon = '🔔') {
-                if (currentScreen !== 'screen-notification') {
-                    previousScreenStack.push({ screen: currentScreen, data: null });
+            const report = affectedReports[0];
+            if (newStatus === 'resuelto') {
+                if (selectedLab && report.lab === `${selectedLab.name} (${selectedLab.faculty})` && report.pc <= pcStates.length) {
+                    pcStates[report.pc - 1] = 'pc-available';
+                    generatePCGrid(false);
                 }
-                document.getElementById('notification-icon').textContent = icon;
-                document.getElementById('notification-message').innerHTML = `<strong>${title}</strong><br><br>${message}`;
-                navigateTo('screen-notification', 'fade');
+                newNotification = true;
+                updateNotificationDot();
             }
+            selectedFaultKey = null;
+            updateFaultList();
+            closeFixModal();
+            showNotification(
+                'Reporte Actualizado',
+                `El reporte para la PC ${report.pc} ha sido marcado como "${newStatus}".`,
+                '✅'
+            );
+        }
 
-            // --- MODIFICADO: Modal ahora tiene Reserva ---
-            function openPCInfoModal(pcNumber, stateClass, seatId) {
+        function showNotification(title, message, icon = '🔔') {
+            if (currentScreen !== 'screen-notification') {
+                previousScreenStack.push({ screen: currentScreen, data: null });
+            }
+            document.getElementById('notification-icon').textContent = icon;
+            document.getElementById('notification-message').innerHTML = `<strong>${title}</strong><br><br>${message}`;
+            navigateTo('screen-notification', 'fade');
+        }
 
-                if (userRole === 'support') {
-                    openSupportPCModal(pcNumber, stateClass);
-                } else {
-                    const modal = document.getElementById('pc-info-modal');
-                    const title = document.getElementById('pc-modal-title');
-                    const icon = document.getElementById('pc-modal-icon');
-                    const badge = document.getElementById('pc-modal-status-badge');
-                    const bookingSection = document.getElementById('booking-section');
-                    const cancelSection = document.getElementById('cancel-section');
-                    const resError = document.getElementById('res-error');
+        // --- MODIFICADO: Modal ahora tiene Reserva ---
+        function openPCInfoModal(pcNumber, stateClass, seatId) {
 
-                    title.textContent = `${selectedLab.name} - PC ${seatId}`;
+            if (userRole === 'support') {
+                openSupportPCModal(pcNumber, stateClass);
+            } else {
+                const modal = document.getElementById('pc-info-modal');
+                const title = document.getElementById('pc-modal-title');
+                const icon = document.getElementById('pc-modal-icon');
+                const badge = document.getElementById('pc-modal-status-badge');
+                const bookingSection = document.getElementById('booking-section');
+                const cancelSection = document.getElementById('cancel-section');
+                const resError = document.getElementById('res-error');
 
-                    // --- Lógica de Visualización de Estado ---
-                    let isMyRes = false;
-                    if (currentReservation && currentReservation.pc === pcNumber && currentReservation.lab === selectedLab.name) {
-                        isMyRes = true;
-                    }
+                title.textContent = `${selectedLab.name} - PC ${seatId}`;
 
-                    if (isMyRes) {
-                        icon.className = `pc-icon-large pc-reserved`; // Usar estilo reserva
-                        badge.textContent = "Tu Reserva";
-                        badge.className = `status-badge status-en.proceso`; // Morado
-                        bookingSection.style.display = 'none';
-                        cancelSection.style.display = 'block';
-                    } else if (stateClass === 'pc-available') {
-                        icon.className = `pc-icon-large pc-available`;
-                        badge.textContent = "Disponible";
-                        badge.className = `status-badge status-resuelto`; // Verde
+                // --- Lógica de Visualización de Estado ---
+                let isMyRes = false;
+                if (currentReservation && currentReservation.pc === pcNumber && currentReservation.lab === selectedLab.name) {
+                    isMyRes = true;
+                }
 
-                        // Validar si puede reservar
-                        if (currentReservation) {
-                            bookingSection.style.display = 'block';
-                            document.getElementById('time-slots').style.display = 'none'; // Ocultar slots
-                            document.getElementById('btn-reserve').style.display = 'none'; // Ocultar btn
-                            resError.style.display = 'block'; // Mostrar error
-                        } else {
-                            bookingSection.style.display = 'block';
-                            document.getElementById('time-slots').style.display = 'grid';
-                            document.getElementById('btn-reserve').style.display = 'flex';
-                            resError.style.display = 'none';
-                            generateTimeSlots(); // Generar horas
-                        }
-                        cancelSection.style.display = 'none';
+                if (isMyRes) {
+                    icon.className = `pc-icon-large pc-reserved`; // Usar estilo reserva
+                    badge.textContent = "Tu Reserva";
+                    badge.className = `status-badge status-en.proceso`; // Morado
+                    bookingSection.style.display = 'none';
+                    cancelSection.style.display = 'block';
+                } else if (stateClass === 'pc-available') {
+                    icon.className = `pc-icon-large pc-available`;
+                    badge.textContent = "Disponible";
+                    badge.className = `status-badge status-resuelto`; // Verde
 
+                    // Validar si puede reservar
+                    if (currentReservation) {
+                        bookingSection.style.display = 'block';
+                        document.getElementById('time-slots').style.display = 'none'; // Ocultar slots
+                        document.getElementById('btn-reserve').style.display = 'none'; // Ocultar btn
+                        resError.style.display = 'block'; // Mostrar error
                     } else {
-                        // No disponible (no debería pasar por el filtro del click, pero por seguridad)
-                        return;
+                        bookingSection.style.display = 'block';
+                        document.getElementById('time-slots').style.display = 'grid';
+                        document.getElementById('btn-reserve').style.display = 'flex';
+                        resError.style.display = 'none';
+                        generateTimeSlots(); // Generar horas
                     }
+                    cancelSection.style.display = 'none';
 
-                    document.getElementById('pc-modal-hw').textContent = hardwareDB[pcNumber % hardwareDB.length];
-                    document.getElementById('pc-modal-sw').textContent = selectedLab.software.join(', ');
-
-                    selectedBookingSlot = null;
-                    document.getElementById('btn-reserve').disabled = true;
-                    document.getElementById('btn-reserve').style.background = "#9CA3AF";
-
-                    modal.style.display = 'flex';
-
-                    // Guardar datos para confirmar reserva
-                    currentSelectedPCIndex = pcNumber;
-                }
-            }
-
-            // --- NUEVO: Generar Slots de Tiempo ---
-
-
-            function updateMapZoomLabel() {
-                const label = document.getElementById('map-zoom-label');
-                if (label) {
-                    label.textContent = Math.round(mapZoom * 100) + '%';
-                }
-            }
-
-            function applyMapZoom() {
-                const img = document.getElementById('campus-map-img');
-                if (img) {
-                    img.style.transform = `scale(${mapZoom})`;
-                    updateMapZoomLabel();
-                }
-            }
-
-            function zoomInMap() {
-                mapZoom = Math.min(mapZoom + 0.25, 3);   // Máx 300%
-                applyMapZoom();
-            }
-
-            function zoomOutMap() {
-                mapZoom = Math.max(mapZoom - 0.25, 1);   // Mín 100%
-                applyMapZoom();
-            }
-
-            function resetMapZoom() {
-                mapZoom = 1;
-                applyMapZoom();
-            }
-
-            function generateTimeSlots() {
-                const container = document.getElementById('time-slots');
-                container.innerHTML = '';
-
-                const LAB_OPEN_HOUR = 8;   // 08:00
-                const LAB_CLOSE_HOUR = 18; // 18:00
-
-                const now = new Date();
-
-                // Minutos actuales desde las 00:00
-                let startMinutes = now.getHours() * 60 + now.getMinutes();
-
-                // Redondear al siguiente múltiplo de 15 min
-                startMinutes = Math.ceil(startMinutes / 15) * 15;
-
-                const labOpenMinutes = LAB_OPEN_HOUR * 60;
-                const labCloseMinutes = LAB_CLOSE_HOUR * 60;
-
-                // Asegurar que no se oferten horarios antes de abrir el laboratorio
-                if (startMinutes < labOpenMinutes) {
-                    startMinutes = labOpenMinutes;
-                }
-
-                // Ventana máxima de 1 hora desde el inicio
-                let limitMinutes = startMinutes + 60;
-                if (limitMinutes > labCloseMinutes) {
-                    limitMinutes = labCloseMinutes;
-                }
-
-                // Si ya pasó el horario del laboratorio
-                if (startMinutes >= labCloseMinutes) {
-                    container.innerHTML = '<p style="font-size:12px; color:#6B7280; grid-column:1/-1; text-align:center;">No hay horarios disponibles en el horario del laboratorio.</p>';
-                    const confirmBtn = document.getElementById('btn-reserve');
-                    confirmBtn.disabled = true;
-                    confirmBtn.style.background = "#9CA3AF";
+                } else {
+                    // No disponible (no debería pasar por el filtro del click, pero por seguridad)
                     return;
                 }
 
-                for (let m = startMinutes; m < limitMinutes; m += 15) {
-                    const end = m + 15;
-                    if (end > labCloseMinutes) break;
+                document.getElementById('pc-modal-hw').textContent = hardwareDB[pcNumber % hardwareDB.length];
+                document.getElementById('pc-modal-sw').textContent = selectedLab.software.join(', ');
 
-                    const startH = Math.floor(m / 60);
-                    const startM = m % 60;
-                    const endH = Math.floor(end / 60);
-                    const endM = end % 60;
+                selectedBookingSlot = null;
+                document.getElementById('btn-reserve').disabled = true;
+                document.getElementById('btn-reserve').style.background = "#9CA3AF";
 
-                    const timeStr = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')} - ${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+                modal.style.display = 'flex';
 
-                    const btn = document.createElement('div');
-                    btn.className = 'time-btn'; // Reutilizar estilo
-                    btn.style.fontSize = '11px';
-                    btn.style.padding = '8px';
-                    btn.innerText = timeStr;
-                    btn.onclick = () => {
-                        document.querySelectorAll('#time-slots .time-btn').forEach(b => {
-                            b.style.borderColor = '#E5E7EB';
-                            b.style.background = '#F3F4F6';
-                        });
-                        btn.style.borderColor = '#0055A4';
-                        btn.style.background = '#EBF8FF';
-                        selectedBookingSlot = timeStr;
-                        const confirmBtn = document.getElementById('btn-reserve');
-                        confirmBtn.disabled = false;
-                        confirmBtn.style.background = "linear-gradient(135deg, #0055A4 0%, #003d7a 100%)";
-                    };
-                    container.appendChild(btn);
-                }
+                // Guardar datos para confirmar reserva
+                currentSelectedPCIndex = pcNumber;
+            }
+        }
 
-                // Si por alguna razón no se generó ningún horario (ej. falta menos de 15min para cerrar)
-                if (!container.children.length) {
-                    container.innerHTML = '<p style="font-size:12px; color:#6B7280; grid-column:1/-1; text-align:center;">No hay horarios disponibles en la próxima hora.</p>';
+        // --- NUEVO: Generar Slots de Tiempo ---
+
+
+        function updateMapZoomLabel() {
+            const label = document.getElementById('map-zoom-label');
+            if (label) {
+                label.textContent = Math.round(mapZoom * 100) + '%';
+            }
+        }
+
+        function applyMapZoom() {
+            const img = document.getElementById('campus-map-img');
+            if (img) {
+                img.style.transform = `scale(${mapZoom})`;
+                updateMapZoomLabel();
+            }
+        }
+
+        function zoomInMap() {
+            mapZoom = Math.min(mapZoom + 0.25, 3);   // Máx 300%
+            applyMapZoom();
+        }
+
+        function zoomOutMap() {
+            mapZoom = Math.max(mapZoom - 0.25, 1);   // Mín 100%
+            applyMapZoom();
+        }
+
+        function resetMapZoom() {
+            mapZoom = 1;
+            applyMapZoom();
+        }
+
+        function generateTimeSlots() {
+            const container = document.getElementById('time-slots');
+            container.innerHTML = '';
+
+            const LAB_OPEN_HOUR = 8;   // 08:00
+            const LAB_CLOSE_HOUR = 18; // 18:00
+
+            const now = new Date();
+
+            // Minutos actuales desde las 00:00
+            let startMinutes = now.getHours() * 60 + now.getMinutes();
+
+            // Redondear al siguiente múltiplo de 15 min
+            startMinutes = Math.ceil(startMinutes / 15) * 15;
+
+            const labOpenMinutes = LAB_OPEN_HOUR * 60;
+            const labCloseMinutes = LAB_CLOSE_HOUR * 60;
+
+            // Asegurar que no se oferten horarios antes de abrir el laboratorio
+            if (startMinutes < labOpenMinutes) {
+                startMinutes = labOpenMinutes;
+            }
+
+            // Ventana máxima de 1 hora desde el inicio
+            let limitMinutes = startMinutes + 60;
+            if (limitMinutes > labCloseMinutes) {
+                limitMinutes = labCloseMinutes;
+            }
+
+            // Si ya pasó el horario del laboratorio
+            if (startMinutes >= labCloseMinutes) {
+                container.innerHTML = '<p style="font-size:12px; color:#6B7280; grid-column:1/-1; text-align:center;">No hay horarios disponibles en el horario del laboratorio.</p>';
+                const confirmBtn = document.getElementById('btn-reserve');
+                confirmBtn.disabled = true;
+                confirmBtn.style.background = "#9CA3AF";
+                return;
+            }
+
+            for (let m = startMinutes; m < limitMinutes; m += 15) {
+                const end = m + 15;
+                if (end > labCloseMinutes) break;
+
+                const startH = Math.floor(m / 60);
+                const startM = m % 60;
+                const endH = Math.floor(end / 60);
+                const endM = end % 60;
+
+                const timeStr = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')} - ${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+
+                const btn = document.createElement('div');
+                btn.className = 'time-btn'; // Reutilizar estilo
+                btn.style.fontSize = '11px';
+                btn.style.padding = '8px';
+                btn.innerText = timeStr;
+                btn.onclick = () => {
+                    document.querySelectorAll('#time-slots .time-btn').forEach(b => {
+                        b.style.borderColor = '#E5E7EB';
+                        b.style.background = '#F3F4F6';
+                    });
+                    btn.style.borderColor = '#0055A4';
+                    btn.style.background = '#EBF8FF';
+                    selectedBookingSlot = timeStr;
                     const confirmBtn = document.getElementById('btn-reserve');
-                    confirmBtn.disabled = true;
-                    confirmBtn.style.background = "#9CA3AF";
-                }
-            }
-
-            // --- NUEVO: Confirmar Reserva ---
-            function confirmReservation() {
-                if (!selectedBookingSlot) return;
-
-                // Crear reserva
-                const rows = ['A', 'B', 'C'];
-                const row = rows[Math.floor((currentSelectedPCIndex - 1) / 4)];
-                const col = ((currentSelectedPCIndex - 1) % 4) + 1;
-                const seatId = `${row}-${col}`;
-
-                currentReservation = {
-                    lab: selectedLab.name,
-                    pc: currentSelectedPCIndex,
-                    seatId: seatId,
-                    time: selectedBookingSlot
+                    confirmBtn.disabled = false;
+                    confirmBtn.style.background = "linear-gradient(135deg, #0055A4 0%, #003d7a 100%)";
                 };
-
-                closePCInfoModal();
-                generatePCGrid(); // Actualizar visualmente
-                showNotification('Reserva Confirmada', `Has reservado la PC ${seatId} en ${selectedLab.name} para las ${selectedBookingSlot}.`, '🎟️');
+                container.appendChild(btn);
             }
 
-            // --- NUEVO: Cancelar Reserva ---
-            function cancelReservation() {
-                currentReservation = null;
-                closePCInfoModal(); // Si estaba abierto
-                if (currentScreen === 'screen-lab') generatePCGrid(); // Refrescar si estoy en el lab
-                if (currentScreen === 'screen-history') updateHistoryList(); // Refrescar historial
-                showNotification('Reserva Cancelada', `Tu reserva ha sido cancelada exitosamente.`, '🗑️');
+            // Si por alguna razón no se generó ningún horario (ej. falta menos de 15min para cerrar)
+            if (!container.children.length) {
+                container.innerHTML = '<p style="font-size:12px; color:#6B7280; grid-column:1/-1; text-align:center;">No hay horarios disponibles en la próxima hora.</p>';
+                const confirmBtn = document.getElementById('btn-reserve');
+                confirmBtn.disabled = true;
+                confirmBtn.style.background = "#9CA3AF";
             }
+        }
+
+        // --- NUEVO: Confirmar Reserva ---
+        function confirmReservation() {
+            if (!selectedBookingSlot) return;
+
+            // Crear reserva
+            const rows = ['A', 'B', 'C'];
+            const row = rows[Math.floor((currentSelectedPCIndex - 1) / 4)];
+            const col = ((currentSelectedPCIndex - 1) % 4) + 1;
+            const seatId = `${row}-${col}`;
+
+            currentReservation = {
+                lab: selectedLab.name,
+                pc: currentSelectedPCIndex,
+                seatId: seatId,
+                time: selectedBookingSlot
+            };
+
+            closePCInfoModal();
+            generatePCGrid(); // Actualizar visualmente
+            showNotification('Reserva Confirmada', `Has reservado la PC ${seatId} en ${selectedLab.name} para las ${selectedBookingSlot}.`, '🎟️');
+
+            // --- NUEVO: Efectos de Confeti y Sonido ---
+            fireConfetti();
+            playSound('success');
+        }
+
+        // --- NUEVO: Cancelar Reserva ---
+        function cancelReservation() {
+            currentReservation = null;
+            closePCInfoModal(); // Si estaba abierto
+            if (currentScreen === 'screen-lab') generatePCGrid(); // Refrescar si estoy en el lab
+            if (currentScreen === 'screen-history') updateHistoryList(); // Refrescar historial
+
+            // --- NUEVO: Sonido de "baja" o cancelación ---
+            playSound('error');
+
+            showNotification('Reserva Cancelada', `Tu reserva ha sido cancelada exitosamente.`, '🗑️');
+        }
 
 
-            function closePCInfoModal() {
-                document.getElementById('pc-info-modal').style.display = 'none';
-            }
+        function closePCInfoModal() {
+            document.getElementById('pc-info-modal').style.display = 'none';
+        }
 
-            function openSupportPCModal(pcNumber, stateClass) {
-                currentSelectedPCIndex = pcNumber - 1;
-                const modal = document.getElementById('support-pc-modal');
-                document.getElementById('support-modal-title').textContent = `Gestionar ${selectedLab.name} - PC ${String(pcNumber).padStart(2, '0')}`;
+        function openSupportPCModal(pcNumber, stateClass) {
+            currentSelectedPCIndex = pcNumber - 1;
+            const modal = document.getElementById('support-pc-modal');
+            document.getElementById('support-modal-title').textContent = `Gestionar ${selectedLab.name} - PC ${String(pcNumber).padStart(2, '0')}`;
 
-                document.querySelectorAll('#state-btn-group .state-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                    if (btn.classList.contains(stateClass.replace('pc-', ''))) {
-                        btn.classList.add('active');
-                    }
-                });
+            document.querySelectorAll('#state-btn-group .state-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.classList.contains(stateClass.replace('pc-', ''))) {
+                    btn.classList.add('active');
+                }
+            });
 
-                const reportList = document.getElementById('support-modal-reports-list');
-                const associatedReports = faultReports.filter(r =>
-                    r.lab === `${selectedLab.name} (${selectedLab.faculty})` &&
-                    r.pc === pcNumber &&
-                    r.status !== 'resuelto'
-                );
+            const reportList = document.getElementById('support-modal-reports-list');
+            const associatedReports = faultReports.filter(r =>
+                r.lab === `${selectedLab.name} (${selectedLab.faculty})` &&
+                r.pc === pcNumber &&
+                r.status !== 'resuelto'
+            );
 
-                if (associatedReports.length > 0) {
-                    reportList.innerHTML = '';
-                    associatedReports.forEach(r => {
-                        reportList.innerHTML += `
+            if (associatedReports.length > 0) {
+                reportList.innerHTML = '';
+                associatedReports.forEach(r => {
+                    reportList.innerHTML += `
                         <div class="support-report-item">
                             <strong>${r.status.toUpperCase()}: ${r.priority}</strong>
                             ${r.description}
                         </div>
                     `;
-                    });
-                } else {
-                    reportList.innerHTML = '<p style="text-align: center; font-size: 12px; color: #6B7280;">No hay reportes activos para esta PC.</p>';
-                }
-
-                modal.style.display = 'flex';
-            }
-
-            function closeSupportPCModal() {
-                document.getElementById('support-pc-modal').style.display = 'none';
-            }
-
-            function changePCState(newState) {
-                if (currentSelectedPCIndex === null) return;
-
-                pcStates[currentSelectedPCIndex] = newState;
-
-                if (newState === 'pc-available') {
-                    const pcNumber = currentSelectedPCIndex + 1;
-                    faultReports.forEach(r => {
-                        if (r.lab === `${selectedLab.name} (${selectedLab.faculty})` && r.pc === pcNumber && r.status !== 'resuelto') {
-                            r.status = 'resuelto';
-                            r.fixTime = 'N/A (Forzado)';
-                        }
-                    });
-                    updateFaultList();
-                    newNotification = true;
-                    updateNotificationDot();
-                }
-
-                closeSupportPCModal();
-                generatePCGrid(true);
-            }
-
-
-            // Dashboard
-            function updateDashboard() {
-                const pendingReports = faultReports.filter(r => r.status !== 'resuelto');
-                const totalPCs = labs.length * 12;
-                const totalDamaged = [...new Set(pendingReports.map(r => `${r.lab}-PC${r.pc}`))].length;
-                const operability = (((totalPCs - totalDamaged) / totalPCs) * 100).toFixed(0);
-
-                document.getElementById('kpi-pending').textContent = pendingReports.length;
-                document.getElementById('kpi-operability').textContent = `${operability}%`;
-
-                const resolvedReports = faultReports.filter(r => r.status === 'resuelto' && r.fixTime);
-                let totalMinutes = 0;
-                resolvedReports.forEach(r => {
-                    if (r.fixTime.includes('15 min')) totalMinutes += 15;
-                    else if (r.fixTime.includes('30 min')) totalMinutes += 30;
-                    else if (r.fixTime.includes('1 hora')) totalMinutes += 60;
                 });
-                const avgTime = resolvedReports.length > 0 ? (totalMinutes / resolvedReports.length).toFixed(0) : 0;
-                document.getElementById('kpi-avg-time').textContent = resolvedReports.length > 0 ? `~${avgTime}m` : '--';
+            } else {
+                reportList.innerHTML = '<p style="text-align: center; font-size: 12px; color: #6B7280;">No hay reportes activos para esta PC.</p>';
+            }
 
-                const statusCounts = { 'recibido': 0, 'en revision': 0, 'en proceso': 0 };
-                const statusColors = { 'recibido': '#FEF3C7', 'en revision': '#DBEAFE', 'en proceso': '#F3E8FF' };
-                const statusTextColors = { 'recibido': '#92400E', 'en revision': '#1E40AF', 'en proceso': '#6B21A8' };
-                pendingReports.forEach(r => {
-                    if (statusCounts.hasOwnProperty(r.status)) {
-                        statusCounts[r.status]++;
+            modal.style.display = 'flex';
+        }
+
+        function closeSupportPCModal() {
+            document.getElementById('support-pc-modal').style.display = 'none';
+        }
+
+        function changePCState(newState) {
+            if (currentSelectedPCIndex === null) return;
+
+            pcStates[currentSelectedPCIndex] = newState;
+
+            if (newState === 'pc-available') {
+                const pcNumber = currentSelectedPCIndex + 1;
+                faultReports.forEach(r => {
+                    if (r.lab === `${selectedLab.name} (${selectedLab.faculty})` && r.pc === pcNumber && r.status !== 'resuelto') {
+                        r.status = 'resuelto';
+                        r.fixTime = 'N/A (Forzado)';
                     }
                 });
-                const totalPending = pendingReports.length || 1;
-                let gradientString = 'conic-gradient(';
-                let currentDegree = 0;
-                const legend = document.getElementById('status-pie-legend');
-                legend.innerHTML = '';
-                for (const [status, count] of Object.entries(statusCounts)) {
-                    if (count > 0) {
-                        const percentage = (count / totalPending) * 360;
-                        const nextDegree = currentDegree + percentage;
-                        gradientString += `${statusColors[status]} ${currentDegree}deg ${nextDegree}deg, `;
-                        currentDegree = nextDegree;
-                        legend.innerHTML += `
+                updateFaultList();
+                newNotification = true;
+                updateNotificationDot();
+            }
+
+            closeSupportPCModal();
+            generatePCGrid(true);
+        }
+
+
+        // Dashboard
+        function updateDashboard() {
+            const pendingReports = faultReports.filter(r => r.status !== 'resuelto');
+            const totalPCs = labs.length * 12;
+            const totalDamaged = [...new Set(pendingReports.map(r => `${r.lab}-PC${r.pc}`))].length;
+            const operability = (((totalPCs - totalDamaged) / totalPCs) * 100).toFixed(0);
+
+            document.getElementById('kpi-pending').textContent = pendingReports.length;
+            document.getElementById('kpi-operability').textContent = `${operability}%`;
+
+            const resolvedReports = faultReports.filter(r => r.status === 'resuelto' && r.fixTime);
+            let totalMinutes = 0;
+            resolvedReports.forEach(r => {
+                if (r.fixTime.includes('15 min')) totalMinutes += 15;
+                else if (r.fixTime.includes('30 min')) totalMinutes += 30;
+                else if (r.fixTime.includes('1 hora')) totalMinutes += 60;
+            });
+            const avgTime = resolvedReports.length > 0 ? (totalMinutes / resolvedReports.length).toFixed(0) : 0;
+            document.getElementById('kpi-avg-time').textContent = resolvedReports.length > 0 ? `~${avgTime}m` : '--';
+
+            const statusCounts = { 'recibido': 0, 'en revision': 0, 'en proceso': 0 };
+            const statusColors = { 'recibido': '#FEF3C7', 'en revision': '#DBEAFE', 'en proceso': '#F3E8FF' };
+            const statusTextColors = { 'recibido': '#92400E', 'en revision': '#1E40AF', 'en proceso': '#6B21A8' };
+            pendingReports.forEach(r => {
+                if (statusCounts.hasOwnProperty(r.status)) {
+                    statusCounts[r.status]++;
+                }
+            });
+            const totalPending = pendingReports.length || 1;
+            let gradientString = 'conic-gradient(';
+            let currentDegree = 0;
+            const legend = document.getElementById('status-pie-legend');
+            legend.innerHTML = '';
+            for (const [status, count] of Object.entries(statusCounts)) {
+                if (count > 0) {
+                    const percentage = (count / totalPending) * 360;
+                    const nextDegree = currentDegree + percentage;
+                    gradientString += `${statusColors[status]} ${currentDegree}deg ${nextDegree}deg, `;
+                    currentDegree = nextDegree;
+                    legend.innerHTML += `
                         <div class="legend-item">
                             <div class="legend-dot" style="background-color: ${statusColors[status]}; border: 1px solid ${statusTextColors[status]}"></div>
                             <span>${status.charAt(0).toUpperCase() + status.slice(1)} (${count})</span>
                         </div>
                     `;
-                    }
                 }
-                if (currentDegree < 360 && pendingReports.length > 0) {
-                    gradientString += `#E5E7EB ${currentDegree}deg 360deg`;
-                } else if (pendingReports.length === 0) {
-                    gradientString = '#E5E7EB';
-                }
+            }
+            if (currentDegree < 360 && pendingReports.length > 0) {
+                gradientString += `#E5E7EB ${currentDegree}deg 360deg`;
+            } else if (pendingReports.length === 0) {
+                gradientString = '#E5E7EB';
+            }
 
-                gradientString = gradientString.endsWith(', ') ? gradientString.slice(0, -2) + ')' : gradientString;
-                document.getElementById('status-pie-chart').style.backgroundImage = gradientString;
-                if (pendingReports.length === 0) legend.innerHTML = '<span style="font-size: 12px; color: #6B7280;">No hay reportes activos.</span>';
+            gradientString = gradientString.endsWith(', ') ? gradientString.slice(0, -2) + ')' : gradientString;
+            document.getElementById('status-pie-chart').style.backgroundImage = gradientString;
+            if (pendingReports.length === 0) legend.innerHTML = '<span style="font-size: 12px; color: #6B7280;">No hay reportes activos.</span>';
 
-                const faultsByFaculty = {};
-                pendingReports.forEach(report => {
-                    const facultyMatch = report.lab.match(/\(([^)]+)\)/);
-                    if (facultyMatch) {
-                        const faculty = facultyMatch[1];
-                        faultsByFaculty[faculty] = (faultsByFaculty[faculty] || 0) + 1;
-                    }
-                });
-                const chartContainer = document.getElementById('faults-chart');
-                chartContainer.innerHTML = '';
-                const facultiesSorted = Object.entries(faultsByFaculty).sort(([, a], [, b]) => b - a);
-                const maxFaults = facultiesSorted.length > 0 ? facultiesSorted[0][1] : 1;
-                if (facultiesSorted.length === 0) {
-                    chartContainer.innerHTML = '<div class="empty-state" style="display:block; padding: 10px;"><div class="icon">📊</div><div class="title">Sin Fallas</div><div class="text" style="font-size:12px;">No hay fallas por facultad.</div></div>';
-                    return;
+            const faultsByFaculty = {};
+            pendingReports.forEach(report => {
+                const facultyMatch = report.lab.match(/\(([^)]+)\)/);
+                if (facultyMatch) {
+                    const faculty = facultyMatch[1];
+                    faultsByFaculty[faculty] = (faultsByFaculty[faculty] || 0) + 1;
                 }
-                for (const [faculty, count] of facultiesSorted) {
-                    const percentage = (count / maxFaults) * 100;
-                    const row = document.createElement('div');
-                    row.className = 'bar-row';
-                    row.innerHTML = `
+            });
+            const chartContainer = document.getElementById('faults-chart');
+            chartContainer.innerHTML = '';
+            const facultiesSorted = Object.entries(faultsByFaculty).sort(([, a], [, b]) => b - a);
+            const maxFaults = facultiesSorted.length > 0 ? facultiesSorted[0][1] : 1;
+            if (facultiesSorted.length === 0) {
+                chartContainer.innerHTML = '<div class="empty-state" style="display:block; padding: 10px;"><div class="icon">📊</div><div class="title">Sin Fallas</div><div class="text" style="font-size:12px;">No hay fallas por facultad.</div></div>';
+                return;
+            }
+            for (const [faculty, count] of facultiesSorted) {
+                const percentage = (count / maxFaults) * 100;
+                const row = document.createElement('div');
+                row.className = 'bar-row';
+                row.innerHTML = `
                     <span class="bar-label">${faculty}</span>
                     <div class="bar-bg">
                         <div class="bar-fill" style="width: 0%;"></div>
                     </div>
                     <span class="bar-value">${count}</span>
                 `;
-                    chartContainer.appendChild(row);
-                    setTimeout(() => {
-                        row.querySelector('.bar-fill').style.width = `${percentage}%`;
-                    }, 100);
+                chartContainer.appendChild(row);
+                setTimeout(() => {
+                    row.querySelector('.bar-fill').style.width = `${percentage}%`;
+                }, 100);
+            }
+        }
+
+        // --- Lógica para arrastrar el mapa (Mouse PC + Dedos Móvil) ---
+        const mapContainer = document.querySelector('.map-container');
+        let isDown = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        if (mapContainer) {
+            // 1. EVENTOS MOUSE (PC)
+            mapContainer.addEventListener('mousedown', (e) => {
+                isDown = true;
+                startX = e.pageX - mapContainer.offsetLeft;
+                startY = e.pageY - mapContainer.offsetTop;
+                scrollLeft = mapContainer.scrollLeft;
+                scrollTop = mapContainer.scrollTop;
+                mapContainer.style.cursor = 'grabbing';
+            });
+            mapContainer.addEventListener('mouseleave', () => {
+                isDown = false;
+                mapContainer.style.cursor = 'grab';
+            });
+            mapContainer.addEventListener('mouseup', () => {
+                isDown = false;
+                mapContainer.style.cursor = 'grab';
+            });
+            mapContainer.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - mapContainer.offsetLeft;
+                const y = e.pageY - mapContainer.offsetTop;
+                const walkX = (x - startX) * 1.5; // Velocidad
+                const walkY = (y - startY) * 1.5;
+                mapContainer.scrollLeft = scrollLeft - walkX;
+                mapContainer.scrollTop = scrollTop - walkY;
+            });
+
+            // 2. EVENTOS TÁCTILES (CELULAR)
+            mapContainer.addEventListener('touchstart', (e) => {
+                isDown = true;
+                startX = e.touches[0].pageX - mapContainer.offsetLeft;
+                startY = e.touches[0].pageY - mapContainer.offsetTop;
+                scrollLeft = mapContainer.scrollLeft;
+                scrollTop = mapContainer.scrollTop;
+            });
+            mapContainer.addEventListener('touchend', () => { isDown = false; });
+            mapContainer.addEventListener('touchmove', (e) => {
+                if (!isDown) return;
+                // e.preventDefault(); // Descomentar si el mapa mueve toda la página
+                const x = e.touches[0].pageX - mapContainer.offsetLeft;
+                const y = e.touches[0].pageY - mapContainer.offsetTop;
+                const walkX = (x - startX) * 1.5;
+                const walkY = (y - startY) * 1.5;
+                mapContainer.scrollLeft = scrollLeft - walkX;
+                mapContainer.scrollTop = scrollTop - walkY;
+            });
+        }
+
+        // Ajuste final del zoom para la nueva lógica (Ancho en lugar de Alto)
+        function applyMapZoom() {
+            // CAMBIO CLAVE: Ahora buscamos el wrapper, no la imagen directa
+            const mapWrapper = document.getElementById('map-content-wrapper');
+
+            if (mapWrapper) {
+                // Base es 250%. Multiplicamos por el nivel de zoom.
+                // Al cambiar el ancho del wrapper, la imagen y la posición del pin se ajustan solas.
+                mapWrapper.style.width = `${mapZoom * 250}%`;
+                updateMapZoomLabel();
+            }
+        }
+
+        // =========================================================
+        //  MOTOR "JUICY UI" (Sonidos, Confeti, Notificaciones)
+        // =========================================================
+
+        // --- 1. MOTOR DE SONIDO (Sintetizador Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                // "Pop" suave
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            }
+            else if (type === 'success') {
+                // "Ding" brillante (Acorde mayor)
+                createNote(523.25, now); // Do
+                createNote(659.25, now + 0.1); // Mi
+                createNote(783.99, now + 0.2); // Sol
+            }
+            else if (type === 'error') {
+                // "Buh" grave
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                gainNode.gain.setValueAtTime(0.5, now);
+                gainNode.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+            else if (type === 'notification') {
+                // "Plop" burbujeante
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(600, now + 0.1);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+        }
+
+        function createNote(freq, time) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.2, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+            osc.start(time);
+            osc.stop(time + 0.5);
+        }
+
+        // Agregar sonido a TODOS los botones automáticamente
+        document.addEventListener('click', (e) => {
+            // Si es un botón o un elemento clicable, suena
+            if (e.target.closest('button') || e.target.closest('.menu-item') || e.target.closest('.back-arrow') || e.target.closest('.pc-icon')) {
+                playSound('click');
+                // Efecto visual de rebote
+                const target = e.target.closest('button') || e.target.closest('.menu-item');
+                if (target) {
+                    target.classList.remove('btn-bounce');
+                    void target.offsetWidth; // reset
+                    target.classList.add('btn-bounce');
                 }
             }
+        });
 
-        </script>
+        // --- 2. MOTOR DE CONFETI ---
+        function fireConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = 380; // Ancho del contenedor
+            canvas.height = 680;
+
+            let particles = [];
+            const colors = ['#0055A4', '#F59E0B', '#10B981', '#EF4444', '#6366F1'];
+
+            for (let i = 0; i < 80; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    r: Math.random() * 6 + 2,
+                    dx: (Math.random() - 0.5) * 10,
+                    dy: (Math.random() - 0.5) * 10,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    life: 100
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let active = false;
+                particles.forEach(p => {
+                    if (p.life > 0) {
+                        active = true;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                        ctx.fillStyle = p.color;
+                        ctx.fill();
+                        p.x += p.dx;
+                        p.y += p.dy;
+                        p.dy += 0.2; // Gravedad
+                        p.life--;
+                        p.r = Math.max(0, p.r - 0.1);
+                    }
+                });
+                if (active) requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        // --- 3. MOTOR DE NOTIFICACIONES SIMULADAS (TOASTS) ---
+        const simMessages = [
+            // Estado de Laboratorios
+            { text: "El Lab 104 se está llenando rápido.", avatar: "⚠️" },
+            { text: "Se liberaron 3 PCs en el Lab 101 (FIEC).", avatar: "🔓" },
+            { text: "Lab 105 (FADCOM) alcanzó el 90% de aforo.", avatar: "📈" },
+            { text: "Lab 103 ahora tiene aire acondicionado activo.", avatar: "❄️" },
+            { text: "Limpieza programada iniciada en Lab 102.", avatar: "🧹" },
+
+            // Actividad de Estudiantes (Anónimo)
+            { text: "Un estudiante reservó la PC-05 en Biblioteca.", avatar: "🎟️" },
+            { text: "Nueva reserva confirmada en FIMCP.", avatar: "✅" },
+            { text: "Se reportó un objeto olvidado en Lab 108: Cargador.", avatar: "🔌" },
+            { text: "Reporte de falla enviado desde FCNM.", avatar: "📩" },
+
+            // Mantenimiento y Software
+            { text: "Actualización de MATLAB finalizada en Lab 101.", avatar: "💾" },
+            { text: "Soporte técnico ingresó al Lab 106.", avatar: "🔧" },
+            { text: "Internet restablecido en el área de FCV.", avatar: "📶" },
+            { text: "Mantenimiento de PC-08 completado.", avatar: "🛠️" },
+            { text: "Drivers de video actualizados en FADCOM.", avatar: "🖥️" },
+
+            // Tips del Sistema
+            { text: "Recuerda cerrar tu sesión al salir.", avatar: "💡" },
+            { text: "No olvides guardar tus archivos en la nube.", avatar: "☁️" },
+            { text: "Prohibido consumir alimentos en los laboratorios.", avatar: "🚫" },
+            { text: "El horario de atención termina a las 18:00.", avatar: "⏰" }
+        ];
+
+        function showSystemToast(customMsg = null) {
+            const container = document.getElementById('system-toast-container');
+            if (!container) return;
+
+            const msgData = customMsg || simMessages[Math.floor(Math.random() * simMessages.length)];
+
+            const toast = document.createElement('div');
+            toast.className = 'system-toast';
+            toast.innerHTML = `
+                    <div class="toast-avatar">${msgData.avatar}</div>
+                    <span>${msgData.text}</span>
+                `;
+
+            container.appendChild(toast);
+            playSound('notification');
+
+            // Animación de entrada
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                toast.style.transition = 'all 0.5s ease';
+                setTimeout(() => toast.remove(), 500);
+            }, 4000); // Dura 4 segundos visible
+        }
+
+        // Iniciar ciclo de vida simulado (cada 15 segundos aprox)
+        setInterval(() => {
+            if (Math.random() > 0.6) { // 40% de probabilidad cada ciclo
+                showSystemToast();
+            }
+        }, 8000);
+    </script>
 </body>
 
 </html>
