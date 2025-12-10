@@ -1,0 +1,3825 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESPOL Laboratorios - Prototipo Interactivo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            /* Evita seleccionar texto al arrastrar */
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .phone-container {
+            position: relative;
+            width: 100%;
+            max-width: 380px;
+            margin: 0 auto;
+            height: 680px;
+            /* Un poco más alto para el layout de cine */
+        }
+
+        .screen {
+            width: 360px;
+            height: 680px;
+            background: #F5F7FB;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            visibility: hidden;
+            opacity: 0;
+        }
+
+        .screen.active {
+            visibility: visible;
+            opacity: 1;
+            z-index: 10;
+        }
+
+        /* --- Animaciones --- */
+
+        .screen.slide-left-in {
+            animation: slideLeftIn 0.4s ease-out forwards;
+        }
+
+        .screen.slide-left-out {
+            animation: slideLeftOut 0.4s ease-in forwards;
+            z-index: 5;
+        }
+
+        .screen.slide-right-in {
+            animation: slideRightIn 0.4s ease-out forwards;
+        }
+
+        .screen.slide-right-out {
+            animation: slideRightOut 0.4s ease-in forwards;
+            z-index: 5;
+        }
+
+        .screen.fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .screen.fade-out {
+            animation: fadeOut 0.3s ease-in forwards;
+            z-index: 5;
+        }
+
+        .login-logo-img {
+            width: 150px;
+            height: auto;
+            display: block;
+            margin: 0 auto 15px auto;
+        }
+
+
+        @keyframes slideLeftIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0.5;
+            }
+
+            to {
+                transform: translateX(-50%);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideLeftOut {
+            from {
+                transform: translateX(-50%);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(-150%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes slideRightIn {
+            from {
+                transform: translateX(-150%);
+                opacity: 0.5;
+            }
+
+            to {
+                transform: translateX(-50%);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideRightOut {
+            from {
+                transform: translateX(-50%);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.95);
+            }
+        }
+
+        /* --- Fin Animaciones --- */
+
+        /* --- NUEVO: Estilos de Login --- */
+        @keyframes slideUpFade {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-screen {
+            background: linear-gradient(180deg, #003d7a 0%, #002a5c 100%);
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .login-logo {
+            color: white;
+            font-size: 48px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 40px;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            animation: slideUpFade 0.6s ease-out;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 30px 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            animation: slideUpFade 0.6s ease-out 0.2s;
+            animation-fill-mode: backwards;
+            /* Inicia invisible */
+        }
+
+        .login-card .label {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+        }
+
+        .login-card .input {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-weight: 500;
+        }
+
+        .login-card .input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .login-card .input:focus {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: #FFFFFF;
+            box-shadow: none;
+        }
+
+        .login-card .submit-btn {
+            background: #FFFFFF;
+            color: #0055A4;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-card .submit-btn .spinner {
+            border-top-color: #0055A4;
+            border-left-color: rgba(0, 85, 164, 0.3);
+            border-right-color: rgba(0, 85, 164, 0.3);
+            border-bottom-color: rgba(0, 85, 164, 0.3);
+        }
+
+        .login-error {
+            color: #FECACA;
+            /* Rojo claro para mejor contraste */
+            font-size: 13px;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+            /* Oculto por defecto */
+        }
+
+        /* --- FIN: Estilos de Login --- */
+
+
+        /* Pantalla Menú */
+        .menu-screen {
+            padding: 40px 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1F2933;
+            text-align: center;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .header-icon {
+            font-size: 20px;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+
+        .notification-icon {
+            font-size: 24px;
+            right: 45px;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+
+        .notification-dot {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            background: #EF4444;
+            border: 2px solid #F5F7FB;
+            border-radius: 50%;
+        }
+
+        .notification-dot.hidden {
+            display: none;
+        }
+
+        .menu-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .menu-item {
+            background: white;
+            border: 1.5px solid #CBD5F5;
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .menu-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .menu-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 85, 164, 0.15);
+            border-color: #0055A4;
+        }
+
+        .menu-icon {
+            width: 50px;
+            height: 50px;
+            background: #0055A4;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .menu-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1F2933;
+        }
+
+        /* Tarjeta de Recomendación */
+        .recommendation-card {
+            background: linear-gradient(135deg, rgba(0, 85, 164, 0.9) 0%, rgba(0, 61, 122, 0.9) 100%);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 85, 164, 0.2);
+            cursor: pointer;
+        }
+
+        .recommendation-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            opacity: 0.9;
+        }
+
+        .recommendation-body .title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 2px;
+            text-align: left;
+        }
+
+        .recommendation-body .lab-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        /* Pantalla Lista de Laboratorios */
+        .lab-list-screen {
+            padding: 40px 30px;
+        }
+
+        .prefs-icon {
+            font-size: 22px;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .prefs-icon:hover {
+            transform: translateY(-50%) rotate(45deg);
+        }
+
+        .lab-list {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            height: 380px;
+            overflow-y: auto;
+        }
+
+        .lab-item {
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
+            padding: 15px 20px;
+            /* Ajustado */
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .lab-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .lab-item-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            /* Espacio entre info y tags */
+        }
+
+        .lab-item-info {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .lab-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #0055A4;
+        }
+
+        .lab-icon {
+            font-size: 20px;
+            margin-top: 5px;
+        }
+
+        .lab-text-container {
+            flex: 1;
+        }
+
+        .lab-text {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1F2933;
+        }
+
+        .lab-faculty {
+            font-size: 12px;
+            font-weight: 500;
+            color: #6B7280;
+            margin-top: 2px;
+        }
+
+        .fav-star {
+            font-size: 20px;
+            color: #F59E0B;
+            margin-top: 5px;
+        }
+
+
+        /* Modal Polimórfico (Bottom Sheet) */
+        .modal-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            border-radius: 28px;
+            animation: fadeIn 0.3s ease-out;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .modal-content {
+            position: relative;
+            width: 100%;
+            max-width: 360px;
+            background: white;
+            border-radius: 28px 28px 0 0;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #E5E7EB;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1F2933;
+        }
+
+        .close-btn {
+            font-size: 28px;
+            font-weight: 700;
+            color: #9CA3AF;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            color: #1F2933;
+        }
+
+        .modal-body {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .prefs-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .prefs-item:hover {
+            background: #F9FAFB;
+        }
+
+        .prefs-item div span:first-child {
+            font-size: 16px;
+            color: #1F2933;
+            display: block;
+        }
+
+        .prefs-item div span:last-child {
+            font-size: 12px;
+            color: #6B7280;
+        }
+
+        .fav-toggle {
+            font-size: 22px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .fav-toggle:hover {
+            transform: scale(1.2);
+        }
+
+        /* Filtro de Software */
+        .search-bar-container {
+            position: relative;
+            margin-top: 15px;
+        }
+
+        .search-bar-container .input {
+            padding-left: 40px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #6B7280;
+        }
+
+        .software-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .sw-tag {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 8px;
+            background: #E5E7EB;
+            color: #4B5563;
+        }
+
+        .sw-tag.highlight {
+            background: #10B981;
+            color: white;
+            font-weight: 700;
+        }
+
+        .sw-tag.compact {
+            background: #DBEAFE;
+            color: #1E40AF;
+            font-weight: 600;
+        }
+
+
+        /* Pantalla Lab 101 */
+        .lab-screen {
+            padding: 40px 30px;
+        }
+
+        .back-arrow {
+            font-size: 28px;
+            color: #1F2933;
+            cursor: pointer;
+            position: absolute;
+            left: 30px;
+            top: 40px;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .back-arrow:hover {
+            transform: translateX(-5px);
+        }
+
+        /* Contenedor para botón y hora */
+        .update-container {
+            margin: 80px auto 10px;
+            text-align: center;
+        }
+
+        .update-btn {
+            background: linear-gradient(135deg, #0055A4 0%, #003d7a 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 15px 30px;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 0 auto;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 85, 164, 0.3);
+            width: 190px;
+            height: 50px;
+        }
+
+        .update-btn:disabled {
+            background: #6B7280;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        .update-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 85, 164, 0.4);
+        }
+
+        .last-updated {
+            font-size: 11px;
+            color: #6B7280;
+            margin-top: 10px;
+        }
+
+        /* Lab Info Card (Creatividad) */
+        .lab-info-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .lab-info-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1F2933;
+            margin-bottom: 15px;
+        }
+
+        .lab-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #4B5563;
+            margin-bottom: 10px;
+        }
+
+        .lab-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .occupation-bar {
+            width: 100px;
+            height: 8px;
+            background: #E5E7EB;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .occupation-bar-fill {
+            height: 100%;
+            background: #F59E0B;
+            border-radius: 4px;
+        }
+
+
+        .pc-grid-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px 25px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        /* --- NUEVO: GRID CINE --- */
+        .pc-grid {
+            display: grid;
+            /* FilaLabel, PC, PC, Pasillo, PC, PC */
+            grid-template-columns: auto repeat(2, 1fr) 20px repeat(2, 1fr);
+            gap: 10px 6px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .row-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #9CA3AF;
+            width: 15px;
+            text-align: center;
+        }
+
+        /* Contenedor de PC (Icono + Label) */
+        .pc-item-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pc-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: #6B7280;
+        }
+
+        .pc-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            /* Marco del equipo */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            margin: 0 auto;
+            border: 2px solid transparent;
+            background: #ffffff;
+        }
+
+        .pc-icon:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
+        }
+
+        .pc-img {
+            width: 26px;
+            height: 22px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .pc-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .pc-available {
+            background: #E6FFFA;
+            border-color: #10B981;
+            box-shadow: 0 2px 5px rgba(16, 185, 129, 0.1);
+        }
+
+        .pc-occupied {
+            background: #FEF3C7;
+            border-color: #F59E0B;
+            box-shadow: 0 2px 5px rgba(245, 158, 11, 0.1);
+        }
+
+        .pc-damaged {
+            background: #FEF2F2;
+            border-color: #EF4444;
+            box-shadow: 0 2px 5px rgba(239, 68, 68, 0.1);
+        }
+
+        .pc-maintenance {
+            background: #F3F4F6;
+            border-color: #6B7280;
+            box-shadow: 0 2px 5px rgba(107, 114, 128, 0.1);
+        }
+
+        /* --- NUEVO: Estado Reservado --- */
+        .pc-reserved {
+            background: #F3E8FF;
+            border-color: #8B5CF6;
+            box-shadow: 0 2px 5px rgba(139, 92, 246, 0.2);
+        }
+
+        .pc-screen {
+            width: 20px;
+            height: 16px;
+            background: white;
+            border-radius: 2px;
+            opacity: 0.7;
+        }
+
+        .status-legend {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 10px;
+            color: #6B7280;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-legend.student-view .legend-item.tech-only {
+            display: none;
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+
+        .pc-icon.pc-updating {
+            animation: pulse 0.8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.7;
+            }
+        }
+
+        /* Pantalla Reportar Falla */
+        .report-screen {
+            padding: 40px 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .label {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1F2933;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .input {
+            width: 100%;
+            background: white;
+            border: 1.5px solid #CBD5F5;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 16px;
+            color: #1F2933;
+            transition: all 0.3s;
+            font-family: inherit;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        .input:disabled {
+            background-color: #F3F4F6;
+            color: #6B7280;
+        }
+
+        .input.select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M6 9l4 4 4-4'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 16px 16px;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: #0055A4;
+            box-shadow: 0 0 0 3px rgba(0, 85, 164, 0.1);
+        }
+
+        .textarea {
+            height: 120px;
+            resize: none;
+        }
+
+        /* Botón de Subir Archivo */
+        .upload-btn {
+            background: #F3F4F6;
+            border: 2px dashed #CBD5F5;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-btn:hover {
+            border-color: #0055A4;
+            background: #EBF8FF;
+        }
+
+        .upload-btn span {
+            font-size: 14px;
+            font-weight: 600;
+            color: #4B5563;
+        }
+
+        .upload-btn-icon {
+            font-size: 20px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .file-name {
+            font-size: 12px;
+            color: #10B981;
+            font-weight: 600;
+            margin-top: 8px;
+            display: none;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #0055A4 0%, #003d7a 100%);
+            color: white;
+            border: none;
+            border-radius: 28px;
+            padding: 18px 40px;
+            font-size: 16px;
+            font-weight: 700;
+            width: 100%;
+            max-width: 200px;
+            height: 56px;
+            margin: 30px auto 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 85, 164, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #6B7280;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 85, 164, 0.4);
+        }
+
+        /* Pantalla Lista de Equipos con Fallas / Historial */
+        .list-screen {
+            padding: 40px 30px;
+        }
+
+        /* Contenedor de Filtros */
+        .filter-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+
+        .filter-container .input {
+            padding: 10px;
+            font-size: 12px;
+            background-position: right 10px center;
+            background-size: 12px 12px;
+        }
+
+        .list-container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            height: 400px;
+            overflow-y: auto;
+        }
+
+        .list-item {
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .list-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .list-item.clickable:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #0055A4;
+            cursor: pointer;
+        }
+
+        .list-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1F2933;
+            margin-bottom: 8px;
+            padding-right: 25px;
+        }
+
+        .list-desc {
+            font-size: 13px;
+            color: #6B7280;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Contador de reportes agrupados */
+        .report-group-count {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #EF4444;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 12px;
+        }
+
+        /* Estilos de Status Detallados */
+        .status-recibido {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        /* Amarillo */
+        .status-en.revision {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        /* Azul */
+        .status-en.proceso {
+            background: #F3E8FF;
+            color: #6B21A8;
+        }
+
+        /* Morado */
+        .status-resuelto {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        /* Verde */
+
+        .history-fix-time {
+            font-size: 11px;
+            color: #6B7280;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+
+        /* Pantalla Detalle */
+        .detail-screen {
+            padding: 40px 30px;
+        }
+
+        .detail-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .detail-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1F2933;
+            margin-bottom: 30px;
+        }
+
+        .pc-icon-large {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pc-screen-large {
+            width: 60px;
+            height: 48px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .pc-img-large {
+            width: 48px;
+            height: 40px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .detail-section {
+            text-align: left;
+            margin-top: 30px;
+        }
+
+        .detail-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1F2933;
+            margin-bottom: 10px;
+        }
+
+        .detail-text {
+            font-size: 13px;
+            color: #6B7280;
+            line-height: 1.6;
+            background: #F9FAFB;
+            padding: 15px;
+            border-radius: 12px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        /* Pantalla Notificación */
+        .notification-screen {
+            padding: 40px 30px;
+        }
+
+        .notification-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .bell-icon {
+            width: 80px;
+            height: 80px;
+            background: #0055A4;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin: 0 auto 30px;
+        }
+
+        .notification-text {
+            font-size: 15px;
+            color: #1F2933;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            min-height: 80px;
+            /* Espacio para texto */
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #EF4444;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            animation: bounce 2s ease-in-out infinite;
+            border: 2px solid white;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-5px) scale(1.05);
+            }
+        }
+
+        .navigation-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            transition: all 0.3s;
+        }
+
+        .dot.active {
+            background: white;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        .info-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            transition: all 0.3s ease-out;
+        }
+
+        .info-title {
+            color: #0055A4;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .info-text {
+            color: #6B7280;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* Utilidad para scroll en pantallas */
+        .scrollable {
+            overflow-y: auto;
+            height: 100%;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .scrollable::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* --- Spinner --- */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 0.8s ease-in-out infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        button.loading .spinner {
+            display: block;
+        }
+
+        button.loading .btn-text {
+            display: none;
+        }
+
+        /* --- Dashboard --- */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 15px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0055A4;
+            display: block;
+        }
+
+        .kpi-label {
+            font-size: 10px;
+            color: #6B7280;
+            font-weight: 600;
+            text-transform: uppercase;
+            line-height: 1.3;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            margin: 20px 0;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1F2933;
+            margin-bottom: 20px;
+        }
+
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bar-label {
+            font-size: 12px;
+            color: #4B5563;
+            font-weight: 600;
+            width: 60px;
+        }
+
+        .bar-bg {
+            flex: 1;
+            height: 10px;
+            background: #F3F4F6;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: #0055A4;
+            border-radius: 5px;
+            width: 0%;
+            transition: width 1s ease-out;
+        }
+
+        .bar-value {
+            font-size: 12px;
+            color: #1F2933;
+            font-weight: 700;
+            width: 20px;
+            text-align: right;
+        }
+
+        /* Gráfico de Pastel (Pie) */
+        .pie-chart-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .pie-chart {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #E5E7EB;
+            background-image: conic-gradient(#FEF3C7 0deg 90deg, #DBEAFE 90deg 360deg);
+            flex-shrink: 0;
+        }
+
+        .pie-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+        }
+
+        /* Estados Vacíos */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6B7280;
+            display: none;
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.7;
+        }
+
+        .empty-state .title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1F2933;
+            margin-bottom: 8px;
+        }
+
+        .empty-state .text {
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* Modal de Tiempo de Reparación */
+        .time-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .time-btn {
+            background: #F3F4F6;
+            border: 1px solid #E5E7EB;
+            color: #1F2933;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .time-btn:hover {
+            background: #EBF8FF;
+            border-color: #0055A4;
+        }
+
+        /* Modal de Gestión de Soporte */
+        .state-btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .state-btn {
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+
+        .state-btn.available {
+            background: #D1FAE5;
+            color: #065F46;
+            border-color: #D1FAE5;
+        }
+
+        .state-btn.maintenance {
+            background: #F3E8FF;
+            color: #6B21A8;
+            border-color: #F3E8FF;
+        }
+
+        .state-btn.damaged {
+            background: #FECACA;
+            color: #991B1B;
+            border-color: #FECACA;
+        }
+
+        .state-btn.active {
+            border-color: #0055A4;
+            box-shadow: 0 0 0 2px #0055A4;
+        }
+
+        .support-report-list {
+            max-height: 150px;
+            overflow-y: auto;
+            border-top: 1px solid #E5E7EB;
+            padding-top: 15px;
+        }
+
+        .support-report-item {
+            background: #F9FAFB;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 12px;
+            color: #4B5563;
+            margin-bottom: 8px;
+        }
+
+        .support-report-item strong {
+            color: #1F2933;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* --- NUEVO: Estilos Reservas (Cine) --- */
+        .time-slot-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .time-slot-btn {
+            padding: 10px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #374151;
+            background: white;
+            cursor: pointer;
+        }
+
+        .time-slot-btn:hover {
+            border-color: #0055A4;
+            background: #F0F9FF;
+        }
+
+        .time-slot-btn.selected {
+            background: #0055A4;
+            color: white;
+            border-color: #0055A4;
+        }
+
+        #cancel-ui {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        /* ====== TEMA ESPOL – OVERRIDES DE ESTILO ====== */
+        :root {
+            --espol-azul-oscuro: #003b5c;
+            --espol-azul-medio: #005f8f;
+            --espol-azul-claro: #e3edf5;
+            --espol-dorado: #f4b000;
+            --espol-gris: #4b5563;
+            --espol-gris-claro: #e5e7eb;
+        }
+
+        /* Fondo general más institucional */
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #ffffff 0, #dbe7f4 40%, #001e33 100%);
+            padding: 40px 20px;
+        }
+
+        /* Título principal fuera del teléfono */
+        .container>h1 {
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        /* “Teléfono” más sobrio */
+        .phone-container {
+            filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.45));
+        }
+
+        .screen {
+            background: #f7f9fc;
+            border-radius: 28px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* --- LOGIN ESTILO ESPOL --- */
+        .login-screen {
+            background: radial-gradient(circle at top, #004471 0, #00273f 55%, #00131f 100%);
+        }
+
+        .login-logo {
+            font-size: 40px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+        }
+
+        .login-card .label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .login-card .input {
+            border-radius: 12px;
+        }
+
+        .login-card .submit-btn {
+            background: #ffffff;
+            color: var(--espol-azul-oscuro);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* Mensaje de error más claro */
+        .login-error {
+            color: #fecaca;
+            font-weight: 500;
+        }
+
+        /* --- HEADERS Y TÍTULOS INTERNOS --- */
+        .header .title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--espol-azul-oscuro);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .back-arrow {
+            color: var(--espol-azul-oscuro);
+        }
+
+        /* Íconos del header (campana, candado, etc.) */
+        .header-icon,
+        .notification-icon,
+        .prefs-icon {
+            color: var(--espol-azul-oscuro);
+        }
+
+        /* --- TARJETAS GENERALES (MENÚ, LISTAS, GRID, DETALLE) --- */
+        .menu-card,
+        .lab-list,
+        .pc-grid-card,
+        .list-container,
+        .detail-card,
+        .notification-card,
+        .chart-card,
+        .lab-info-card {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        /* Elementos de menú */
+        .menu-item {
+            border-color: var(--espol-azul-claro);
+            background: #f9fbff;
+        }
+
+        .menu-item:hover {
+            border-color: var(--espol-azul-medio);
+            box-shadow: 0 6px 16px rgba(0, 63, 113, 0.2);
+        }
+
+        /* Icono circular del menú */
+        .menu-icon {
+            background: var(--espol-azul-medio);
+            box-shadow: 0 4px 10px rgba(0, 63, 113, 0.35);
+        }
+
+        /* Tarjeta de recomendación */
+        .recommendation-card {
+            background: linear-gradient(135deg, var(--espol-azul-medio), var(--espol-azul-oscuro));
+        }
+
+        /* Lista de laboratorios */
+        .lab-item {
+            background: #f7f9fc;
+            border-color: #dde3f0;
+        }
+
+        .lab-item:hover {
+            border-color: var(--espol-azul-medio);
+        }
+
+        /* Chip de facultad */
+        .lab-faculty {
+            color: var(--espol-gris);
+        }
+
+        /* KPI y dashboard */
+        .kpi-card {
+            background: #ffffff;
+            border: 1px solid #dde3f0;
+        }
+
+        .kpi-value {
+            color: var(--espol-azul-medio) !important;
+        }
+
+        .kpi-label {
+            color: var(--espol-gris);
+        }
+
+        /* Gráfico de pastel y barras con tonos ESPOL */
+        .pie-chart {
+            background: #e5e7eb;
+            background-image: conic-gradient(#fef3c7 0deg 110deg,
+                    #dbeafe 110deg 240deg,
+                    #e0f2fe 240deg 360deg);
+        }
+
+        .bar-bg {
+            background: #e5e7f1;
+        }
+
+        .bar-fill {
+            background: var(--espol-azul-medio);
+        }
+
+        /* --- BOTONES PRINCIPALES --- */
+        .submit-btn,
+        .update-btn {
+            background: linear-gradient(135deg, var(--espol-azul-medio), var(--espol-azul-oscuro));
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 13px;
+        }
+
+        .submit-btn:hover,
+        .update-btn:hover {
+            box-shadow: 0 8px 22px rgba(0, 63, 113, 0.45);
+        }
+
+        /* Botón gris (ej. cerrar sesión, etc.) */
+        .submit-btn[style*="background: #6B7280"] {
+            background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+        }
+
+        /* Botones rojos (cancelar / eliminar) */
+        .submit-btn[style*="#EF4444"],
+        button[style*="#EF4444"] {
+            background: linear-gradient(135deg, #b91c1c, #7f1d1d) !important;
+        }
+
+        /* --- FORMULARIOS Y CAMPOS --- */
+        .label {
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            color: var(--espol-azul-oscuro);
+        }
+
+        .input,
+        .textarea {
+            border-radius: 12px;
+            border-color: #cbd2e6;
+            background: #ffffff;
+        }
+
+        .input:focus,
+        .textarea:focus {
+            border-color: var(--espol-azul-medio);
+            box-shadow: 0 0 0 2px rgba(0, 95, 143, 0.15);
+        }
+
+        /* Botón de subir archivo */
+        .upload-btn {
+            background: #f3f4f6;
+            border-color: #cbd2e6;
+        }
+
+        .upload-btn:hover {
+            background: #ecf4ff;
+            border-color: var(--espol-azul-medio);
+        }
+
+        /* --- ESTADOS Y BADGES --- */
+        .status-badge {
+            border-radius: 999px;
+        }
+
+        /* Ajuste de colores en badges de estado */
+        .status-recibido {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-en\.revision,
+        .status-en\.proceso {
+            background: #e0edff;
+            color: var(--espol-azul-oscuro);
+        }
+
+        .status-resuelto {
+            background: #dcfce7;
+            color: #065f46;
+        }
+
+        /* Legend de estados PCs */
+        .status-legend .legend-item span {
+            font-weight: 600;
+        }
+
+        /* --- PC GRID --- */
+        .pc-grid-card {
+            padding-top: 24px;
+        }
+
+        .pc-icon {
+            border-radius: 12px;
+        }
+
+        .pc-available {
+            background: #e6fff8;
+            border-color: #10b981;
+        }
+
+        .pc-occupied {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+
+        .pc-damaged {
+            background: #fee2e2;
+            border-color: #ef4444;
+        }
+
+        .pc-maintenance {
+            background: #e5e7eb;
+            border-color: #6b7280;
+        }
+
+        .pc-reserved {
+            background: #ede9fe;
+            border-color: #8b5cf6;
+        }
+
+        /* --- HISTORIAL / LISTA / NOTIFICACIONES --- */
+        .list-item {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+
+        .list-item.clickable:hover {
+            border-color: var(--espol-azul-medio);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+        }
+
+        .notification-card {
+            border-top: 4px solid var(--espol-azul-medio);
+        }
+
+        .bell-icon {
+            background: var(--espol-azul-medio);
+        }
+
+        /* --- PANEL INFORMATIVO INFERIOR --- */
+        .info-panel {
+            background: #ffffff;
+            border-radius: 18px;
+            border: 1px solid rgba(15, 23, 42, 0.06);
+        }
+
+        .info-title {
+            color: var(--espol-azul-oscuro);
+        }
+
+        .info-text {
+            color: var(--espol-gris);
+        }
+
+        /* --- ESTADOS VACÍOS --- */
+        .empty-state .icon {
+            opacity: 0.5;
+        }
+
+        .empty-state .title {
+            color: var(--espol-azul-oscuro);
+        }
+
+        /* --- DOTS DE NAVEGACIÓN --- */
+        .navigation-dots .dot {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .navigation-dots .dot.active {
+            background: #ffffff;
+        }
+
+        /* ====== FIN OVERRIDES TEMA ESPOL ====== */
+
+
+        /* --- Mapa del Campus ESPOL --- */
+        .map-wrapper {
+            margin-top: 8px;
+            border-radius: 16px;
+            border: 1px solid #E5E7EB;
+            overflow: hidden;
+            background: #F3F4F6;
+        }
+
+        .map-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 8px;
+            background: #E5E7EB;
+            font-size: 11px;
+        }
+
+        .map-toolbar button {
+            border: none;
+            background: #FFFFFF;
+            border-radius: 999px;
+            padding: 3px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.15);
+        }
+
+        .map-toolbar button:active {
+            transform: scale(0.97);
+        }
+
+        .map-container {
+            max-height: 360px;
+            overflow: auto;
+            background: #000000;
+        }
+
+        .map-container img {
+            display: block;
+            max-width: none;
+            width: 100%;
+            transform-origin: top left;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1
+            style="text-align: center; color: white; font-size: 28px; margin-bottom: 20px; text-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+            ESPOL Laboratorios
+        </h1>
+
+        <div class="phone-container">
+            <!-- --- Pantalla 1: Login --- -->
+            <div id="screen-login" class="screen active">
+                <div class="login-screen">
+                    <div class="login-logo"> ESPOL </div>
+                    <div class="login-card">
+                        <div class="form-group">
+                            <label class="label">Correo Institucional</label>
+                            <input type="email" id="login-email" class="input" placeholder="usuario@espol.edu.ec">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 10px;">
+                            <label class="label">Contraseña</label>
+                            <input type="password" id="login-password" class="input" placeholder="••••••••"
+                                onkeydown="if(event.key==='Enter') handleLogin()">
+                        </div>
+                        <button class="submit-btn" id="login-button" onclick="handleLogin()">
+                            <span class="spinner"></span>
+                            <span class="btn-text">Ingresar</span>
+                        </button>
+                        <div class="login-error" id="login-error">
+                            Correo o contraseña incorrectos.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pantalla 2: Menú Estudiante -->
+            <div id="screen-menu-student" class="screen">
+                <div class="menu-screen">
+                    <div class="back-arrow" onclick="navigateTo('screen-login', 'fade')">←</div>
+                    <div class="header">
+                        <div class="title">Menú</div>
+                        <div class="notification-icon" onclick="clearNotificationAndNavigate()">
+                            🔔
+                            <div class="notification-dot hidden" id="notification-dot"></div>
+                        </div>
+                        <div class="header-icon" style="right: 0;">🔒</div>
+                    </div>
+                    <div class="menu-card">
+                        <div class="menu-item" onclick="navigateTo('screen-lab-list', 'slide-left')">
+                            <div class="menu-icon">🖥️</div>
+                            <div class="menu-text">Ver Disponibilidad</div>
+                        </div>
+                        <div class="menu-item" onclick="openReportScreen()">
+                            <div class="menu-icon">⚠️</div>
+                            <div class="menu-text">Reportar Falla</div>
+                        </div>
+                        <div class="menu-item" onclick="navigateTo('screen-history', 'slide-left')">
+                            <div class="menu-icon">📋</div>
+                            <div class="menu-text">Historial de Reportes</div>
+                        </div>
+                        <div class="menu-item" onclick="navigateTo('screen-campus-map', 'slide-left')">
+                            <div class="menu-icon">🗺️</div>
+                            <div class="menu-text">Mapa del Campus</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pantalla 2.5: Lista de Laboratorios -->
+            <div id="screen-lab-list" class="screen">
+                <div class="lab-list-screen scrollable">
+                    <div class="back-arrow" onclick="navigateBack('slide-right')">←</div>
+                    <div class="header">
+                        <div class="title">Laboratorios</div>
+                        <div class="prefs-icon" id="prefs-icon-btn" onclick="openPrefsModal()">⚙️</div>
+                    </div>
+
+                    <!-- Filtro de Software -->
+                    <div class="search-bar-container">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="lab-search" class="input" style="padding-left: 40px;"
+                            placeholder="Buscar software (ej: Matlab, AutoCAD)..." onkeyup="filterLabs()">
+                    </div>
+
+                    <!-- Tarjeta de Recomendación -->
+                    <div class="recommendation-card" id="recommendation-card" style="display: none;">
+                        <div class="recommendation-icon">⭐</div>
+                        <div class="recommendation-body">
+                            <div class="title">Recomendado Ahora</div>
+                            <div class="lab-name" id="rec-lab-text">Lab 103 (FIMCP) - 10 Libres</div>
+                        </div>
+                    </div>
+
+                    <div class="lab-list" id="lab-list" style="margin-top: 0;">
+                        <!-- Laboratorios generados por JS -->
+                        <!-- Estado Vacío para Labs -->
+                        <div class="empty-state" id="lab-empty-state">
+                            <div class="icon">😢</div>
+                            <div class="title">Sin Resultados</div>
+                            <div class="text">No se encontraron laboratorios que coincidan con tu búsqueda.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal de Preferencias -->
+                <div class="modal-overlay sheet" id="prefs-modal" onclick="closePrefsModal()">
+                    <div class="modal-content" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <div class="modal-title">Laboratorios Favoritos</div>
+                            <div class="close-btn" onclick="closePrefsModal()">×</div>
+                        </div>
+                        <div class="modal-body" id="prefs-lab-list">
+                            <!-- Lista de labs para marcar como favoritos -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pantalla 3: Lab 101 (CINE GRID) -->
+            <div id="screen-lab" class="screen">
+                <div class="lab-screen scrollable">
+                    <div class="back-arrow" onclick="navigateBack('slide-right')">←</div>
+                    <div class="header" style="margin-bottom: 0;">
+                        <div class="title" id="lab-detail-title">Lab 101</div>
+                    </div>
+                    <!-- Contenedor para botón y hora -->
+                    <div class="update-container">
+                        <button class="update-btn" id="update-btn" onclick="updatePCStatus()">
+                            <span class="spinner"></span>
+                            <span class="btn-text">
+                                <span style="font-size: 20px; vertical-align: middle; margin-right: 5px;">⟳</span>
+                                ACTUALIZAR
+                            </span>
+                        </button>
+                        <div class="last-updated" id="last-updated">Última actualización: --:-- --</div>
+                    </div>
+
+                    <!-- Info Card Estudiante -->
+                    <div class="lab-info-card" id="lab-info-card" style="display: none;">
+                        <div class="lab-info-header">Info. del Laboratorio</div>
+                        <div class="lab-info-row">
+                            <span>Horario</span>
+                            <strong>L-V 08:00 - 18:00</strong>
+                        </div>
+                        <div class="lab-info-row">
+                            <span>Nivel de Ocupación</span>
+                            <div class="occupation-bar">
+                                <div class="occupation-bar-fill" id="occupation-fill" style="width: 60%;"></div>
+                            </div>
+                        </div>
+                        <div class="lab-info-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                            <span style="font-weight: 600;">Software Popular</span>
+                            <div class="software-tags" id="popular-software-tags">
+                                <!-- JS Generated -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pc-grid-card">
+                        <div class="pc-grid" id="pc-grid">
+                            <!-- PCs generados por JS -->
+                        </div>
+                        <div class="status-legend" id="status-legend">
+                            <div class="legend-item">
+                                <div class="legend-dot" style="background: #E6FFFA; border: 1px solid #10B981;"></div>
+                                <span id="available-count">Libre</span>
+                            </div>
+                            <div class="legend-item tech-only">
+                                <div class="legend-dot" style="background: #FEF3C7; border: 1px solid #F59E0B;"></div>
+                                <span id="occupied-count">Ocupado</span>
+                            </div>
+                            <div class="legend-item" id="legend-reserved" style="display:none;">
+                                <div class="legend-dot" style="background: #F3E8FF; border: 1px solid #8B5CF6;"></div>
+                                <span>Tu Reserva</span>
+                            </div>
+                            <!-- Estado Mantenimiento -->
+                            <div class="legend-item tech-only">
+                                <div class="legend-dot" style="background: #A78BFA;"></div>
+                                <span>Mantenim.</span>
+                            </div>
+                            <div class="legend-item tech-only">
+                                <div class="legend-dot" style="background: #EF4444;"></div>
+                                <span id="damaged-count">Dañado</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal de Info PC / Reserva (Estudiante) -->
+                <div class="modal-overlay sheet" id="pc-info-modal" onclick="closePCInfoModal()">
+                    <div class="modal-content" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <div class="modal-title" id="pc-modal-title">PC-00</div>
+                            <div class="close-btn" onclick="closePCInfoModal()">×</div>
+                        </div>
+                        <div class="modal-body">
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <div class="pc-icon" id="pc-modal-icon"
+                                    style="margin: 0 auto 15px; width: 60px; height: 60px;">
+                                    <div class="pc-screen" style="width: 30px; height: 24px;"></div>
+                                </div>
+                                <span class="status-badge" id="pc-modal-status-badge"
+                                    style="margin-bottom: 20px;">Disponible</span>
+                            </div>
+
+                            <div class="detail-section" style="margin-top: 0; text-align: left;">
+                                <div class="detail-label">Hardware</div>
+                                <div class="detail-text" id="pc-modal-hw">...</div>
+                            </div>
+                            <div class="detail-section" style="text-align: left;">
+                                <div class="detail-label">Software</div>
+                                <div class="detail-text" id="pc-modal-sw">...</div>
+                            </div>
+
+                            <!-- --- NUEVO: Sección Reservas --- -->
+                            <div id="booking-section" style="margin-top: 20px; display: none;">
+                                <div class="detail-label">Reservar Horario (15 min)</div>
+                                <div class="time-slot-list" id="time-slots">
+                                    <!-- JS generated slots -->
+                                </div>
+                                <button class="submit-btn" id="btn-reserve" style="margin-top: 20px;"
+                                    onclick="confirmReservation()" disabled>
+                                    Confirmar Reserva
+                                </button>
+                                <p id="res-error"
+                                    style="color: #EF4444; font-size: 12px; margin-top: 10px; display:none; text-align: center;">
+                                    Ya tienes una reserva activa en otro equipo.</p>
+                            </div>
+
+                            <div id="cancel-section" style="margin-top: 20px; display: none;">
+                                <p style="font-size: 13px; color: #6B7280; text-align: center; margin-bottom: 15px;">
+                                    Tienes una reserva activa en este equipo.</p>
+                                <button class="submit-btn" style="background: #EF4444;"
+                                    onclick="cancelReservation()">Cancelar Reserva</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal de Gestión PC (Soporte) -->
+                <div class="modal-overlay sheet" id="support-pc-modal" onclick="closeSupportPCModal()">
+                    <div class="modal-content" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <div class="modal-title" id="support-modal-title">Gestionar PC-00</div>
+                            <div class="close-btn" onclick="closeSupportPCModal()">×</div>
+                        </div>
+                        <div class="modal-body">
+                            <div class="detail-label" style="margin-bottom: 10px;">Cambiar Estado</div>
+                            <div class="state-btn-group" id="state-btn-group">
+                                <div class="state-btn available" onclick="changePCState('pc-available')">Disponible
+                                </div>
+                                <div class="state-btn maintenance" onclick="changePCState('pc-maintenance')">
+                                    Mantenimiento</div>
+                                <div class="state-btn damaged" onclick="changePCState('pc-damaged')">Dañado</div>
+                            </div>
+
+                            <div class="detail-label" style="margin-top: 20px; margin-bottom: 10px;">Reportes Activos
+                            </div>
+                            <div class="support-report-list" id="support-modal-reports-list">
+                                <!-- JS Generated -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <!-- Pantalla 4: Reportar Falla -->
+            <div id="screen-report" class="screen">
+                <div class="report-screen scrollable">
+                    <div class="back-arrow" onclick="navigateBack('slide-right')">←</div>
+                    <div class="header">
+                        <div class="title">Reportar Falla</div>
+                    </div>
+                    <div style="margin-top: 30px;">
+                        <div class="form-group">
+                            <label class="label">Laboratorio</label>
+                            <select id="lab-select" class="input select"></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="label">Número de PC</label>
+                            <input type="number" id="pc-number" class="input" value="" placeholder="Ej: 12">
+                        </div>
+                        <div class="form-group">
+                            <label class="label">Descripción</label>
+                            <textarea id="fault-description" class="input textarea"
+                                placeholder="Describe el problema detalladamente..."></textarea>
+                        </div>
+
+                        <!-- Subir Evidencia -->
+                        <div class="form-group">
+                            <label class="label">Evidencia (Opcional)</label>
+                            <div class="upload-btn" onclick="simulateFileUpload()">
+                                <span><span class="upload-btn-icon">📁</span>Adjuntar imagen...</span>
+                            </div>
+                            <span class="file-name" id="file-name-span"></span>
+                        </div>
+
+                        <button class="submit-btn" id="submit-report-btn" onclick="submitReport()">
+                            <span class="spinner"></span>
+                            <span class="btn-text">Enviar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pantalla 5: Menú Soporte (CON DASHBOARD) -->
+            <div id="screen-menu-support" class="screen">
+                <div class="menu-screen">
+                    <div class="back-arrow" onclick="navigateTo('screen-login', 'fade')">←</div>
+                    <div class="header">
+                        <div class="title">Soporte</div>
+                        <div class="header-icon" style="right: 0;">🔒</div>
+                    </div>
+                    <div class="menu-card">
+                        <!-- Botón Dashboard -->
+                        <div class="menu-item" onclick="navigateTo('screen-dashboard', 'slide-left')">
+                            <div class="menu-icon">📊</div>
+                            <div class="menu-text">Dashboard</div>
+                        </div>
+                        <div class="menu-item" onclick="navigateTo('screen-lab-list', 'slide-left')">
+                            <div class="menu-icon">🖥️</div>
+                            <div class="menu-text">Ver Disponibilidad</div>
+                        </div>
+                        <div class="menu-item" onclick="navigateTo('screen-faults', 'slide-left')"
+                            style="position: relative;">
+                            <div class="menu-icon">📋</div>
+                            <div class="menu-text">Equipos con Fallas</div>
+                            <div class="notification-badge" id="fault-badge">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pantalla 6: Equipos con Fallas (Soporte - CON FILTROS) -->
+            <div id="screen-faults" class="screen">
+                <div class="list-screen scrollable">
+                    <div class="back-arrow" onclick="navigateBack('slide-right')">←</div>
+                    <div class="header" style="margin-bottom: 0;">
+                        <div class="title">Equipos con fallas</div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="filter-container">
+                        <select id="filter-lab" class="input select" style="flex: 2;" onchange="updateFaultList()">
+                            <option value="">Todos los Labs</option>
+                        </select>
+                        <select id="filter-priority" class="input select" style="flex: 1;" onchange="updateFaultList()">
+                            <option value="">Prioridad</option>
+                            <option value="alta">Alta</option>
+                            <option value="media">Media</option>
+                            <option value="baja">Baja</option>
+                        </select>
+                    </div>
+
+                    <div class="list-container" id="fault-list" style="height: 440px;">
+                        <!-- Reportes generados por JS -->
+                        <!-- Estado Vacío para Fallas -->
+                        <div class="empty-state" id="fault-empty-state">
+                            <div class="icon">🎉</div>
+                            <div class="title">¡Todo en orden!</div>
+                            <div class="text">No hay fallas pendientes que coincidan con los filtros. Buen trabajo.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pantalla 6.5: Historial de Reportes (Estudiante) -->
+            <div id="screen-history" class="screen">
+                <div class="list-screen scrollable">
+                    <div class="back-arrow" onclick="navigateBack('slide-right')">←</div>
+                    <div class="header">
+                        <div class="title">Historial</div>
+                    </div>
+                    <div class="list-container" id="history-list" style="margin-top: 30px;">
+                        <!-- Historial generado por JS -->
+                        <div id="active-reservation-card" class="reservation-active-card hidden"
+                            style="background: #F3E8FF; border: 1px solid #8B5CF6; padding: 15px; border-radius: 12px; margin-bottom: 15px; display: none;">
+                            <div>
+                                <div style="font-size: 11px; color: #6D28D9; font-weight: 700;">RESERVA ACTIVA</div>
+                                <div style="font-size: 16px; font-weight: 700; color: #4C1D95;" id="hist-res-pc">Lab 101
+                                    - PC A2</div>
+                                <div style="font-size: 12px; color: #5B21B6;" id="hist-res-time">10:00 - 10:15</div>
+                            </div>
+                        </div>
+
+                        <!-- Estado Vacío para Historial -->
+                        <div class="empty-state" id="history-empty-state">
+                            <div class="icon">📝</div>
+                            <div class="title">Historial Vacío</div>
+                            <div class="text">Aún no has enviado reportes ni tienes reservas.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pantalla 7: Detalle Equipo -->
+            <div id="screen-detail" class="screen">
+                <div class="detail-screen scrollable">
+                    <div class="back-arrow" onclick="navigateBack('slide-right')">←</div>
+                    <div class="header">
+                        <div class="title">Reporte</div>
+                    </div>
+                    <div class="detail-card" style="margin-top: 30px;">
+                        <div class="detail-title" id="detail-title">Lab 101 - PC 12</div>
+                        <div class="pc-icon-large pc-damaged" id="detail-pc-icon">
+                            <img src="pc-icon.png" alt="PC" class="pc-img-large">
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-label">Detalle del problema</div>
+                            <div class="detail-text" id="detail-description">
+                                No enciende. Posible problema de fuente o cableado.
+                            </div>
+                        </div>
+
+                        <!-- Mostrar Evidencia -->
+                        <div class="detail-section" id="detail-evidence-section" style="display: none;">
+                            <div class="detail-label">Evidencia Adjunta</div>
+                            <div class="detail-text" style="color: #0055A4; font-weight: 600; cursor: pointer;"
+                                id="detail-evidence-link">
+                                📁 ver_evidencia.jpg
+                            </div>
+                        </div>
+
+                        <!-- Botón abre modal -->
+                        <button class="submit-btn" style="margin-top: 30px; max-width: 100%;" onclick="openFixModal()">
+                            <span class="btn-text">Gestionar Reporte</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pantalla 8: Notificación -->
+            <div id="screen-notification" class="screen">
+                <div class="notification-screen">
+                    <div class="back-arrow" onclick="navigateBack('fade')">←</div>
+                    <div class="header">
+                        <div class="title">Notificación</div>
+                    </div>
+                    <div class="notification-card" style="margin-top: 60px;">
+                        <div class="bell-icon" id="notification-icon">🔔</div>
+                        <div class="notification-text" id="notification-message">
+                            <strong>Reporte enviado exitosamente</strong><br><br>
+                            Tu reporte ha sido recibido y será atendido pronto.
+                        </div>
+                        <button class="submit-btn" onclick="navigateBack('fade')">
+                            <span class="btn-text">Aceptar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pantalla Dashboard -->
+            <div <!-- Pantalla: Mapa del Campus -->
+                <div id="screen-campus-map" class="screen">
+                    <div class="detail-screen scrollable">
+                        <div class="back-arrow" onclick="navigateTo('screen-menu-student', 'slide-right')">←</div>
+                        <div class="header">
+                            <div class="title">Mapa del Campus</div>
+                        </div>
+
+                        <div class="content">
+                            <div class="detail-card">
+                                <div class="detail-label">Campus Gustavo Galindo</div>
+                                <div class="detail-text" style="margin-bottom: 10px;">
+                                    Visualiza la ubicación de facultades, laboratorios y servicios dentro del campus
+                                    ESPOL.
+                                </div>
+
+                                <div class="map-wrapper">
+                                    <div class="map-toolbar">
+                                        <button type="button" onclick="zoomOutMap()">−</button>
+                                        <span id="map-zoom-label">100%</span>
+                                        <button type="button" onclick="zoomInMap()">＋</button>
+                                        <button type="button" onclick="resetMapZoom()">↺</button>
+                                    </div>
+
+                                    <div class="map-container">
+                                        <img id="campus-map-img" src="mapaespol.png" alt="Mapa del campus ESPOL">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="screen-dashboard" class="screen">
+                    <div class="list-screen scrollable">
+                        <div class="back-arrow" onclick="navigateBack('slide-right')">←</div>
+                        <div class="header">
+                            <div class="title">Dashboard</div>
+                        </div>
+
+                        <div class="kpi-grid" style="margin-top: 30px;">
+                            <div class="kpi-card">
+                                <span class="kpi-value" id="kpi-pending">0</span>
+                                <span class="kpi-label">Reportes Pendientes</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-value" id="kpi-operability" style="color: #10B981;">0%</span>
+                                <span class="kpi-label">Operatividad</span>
+                            </div>
+                            <!-- KPI Tiempo Promedio -->
+                            <div class="kpi-card">
+                                <span class="kpi-value" id="kpi-avg-time" style="color: #6B7280;">--</span>
+                                <span class="kpi-label">Rep. Promedio</span>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de Pastel -->
+                        <div class="chart-card">
+                            <h4 class="chart-title">Estado de Reportes Activos</h4>
+                            <div class="pie-chart-container">
+                                <div class="pie-chart" id="status-pie-chart"></div>
+                                <div class="pie-legend" id="status-pie-legend">
+                                    <!-- JS Generated -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chart-card" style="margin-top: 0;">
+                            <h4 class="chart-title">Fallas por Facultad</h4>
+                            <div class="bar-chart" id="faults-chart">
+                                <!-- JS Generated -->
+                            </div>
+                        </div>
+
+                        <button class="submit-btn" style="background: #6B7280; max-width: 100%; margin-bottom: 20px;"
+                            onclick="navigateTo('screen-login', 'fade')">
+                            <span class="btn-text">Cerrar Sesión</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal de Tiempo de Reparación -->
+                <div class="modal-overlay sheet" id="fix-time-modal" onclick="closeFixModal()">
+                    <div class="modal-content" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <div class="modal-title">Gestionar Reporte</div>
+                            <div class="close-btn" onclick="closeFixModal()">×</div>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label class="label">Nuevo Estado del Reporte</label>
+                                <select id="report-status-select" class="input select"
+                                    onchange="toggleTimeInput(this.value)">
+                                    <option value="en revision">En Revisión</option>
+                                    <option value="en proceso">En Proceso</option>
+                                    <option value="resuelto">Resuelto</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="time-input-group" style="display: none;">
+                                <label class="label">Tiempo Estimado de Reparación (Ej: 25 min, 1.5h)</label>
+                                <input type="text" id="report-time-input" class="input" placeholder="Ej: 45 min">
+                            </div>
+                            <button class="submit-btn" style="max-width: 100%;" onclick="confirmFix()">
+                                <span class="btn-text">Actualizar Reporte</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="navigation-dots" id="nav-dots">
+                <div class="dot active" data-dot="1"></div>
+                <div class="dot" data-dot="2"></div>
+                <div class="dot" data-dot="3"></div>
+                <div class="dot" data-dot="4"></div>
+            </div>
+
+            <div class="info-panel" id="info-panel">
+                <div class="info-title" id="info-title">👋 Pantalla de Inicio</div>
+                <div class="info-text" id="info-text">Selecciona tu rol para comenzar a usar la aplicación</div>
+            </div>
+        </div>
+
+        <script>
+            let currentScreen = 'screen-login';
+            let previousScreenStack = ['screen-login'];
+            let userRole = null;
+            let pcStates = [];
+            let selectedFaultKey = null;
+            let labs = [];
+            let selectedLab = null;
+            let newNotification = false;
+            let simulatedEvidenceFile = null;
+            let currentSelectedPCIndex = null;
+
+            // --- NUEVO: Estado de Reserva ---
+            let currentReservation = null; // { lab: 'Lab 101', pc: 1, time: '10:00 - 10:15' }
+
+            // --- Mapa del Campus ---
+            let mapZoom = 1;
+            let selectedBookingSlot = null;
+
+            let faultReports = [
+                { id: 1, lab: 'Lab 101 (FIEC)', pc: 12, description: 'No enciende. Posible problema de fuente.', status: 'recibido', priority: 'alta', evidence: 'falla_fuente.jpg', fixTime: null },
+                { id: 2, lab: 'Lab 103 (FIMCP)', pc: 3, description: 'Sin internet. Cable desconectado.', status: 'en revision', priority: 'media', evidence: null, fixTime: null },
+                { id: 3, lab: 'Lab 101 (FIEC)', pc: 8, description: 'Teclado dañado. Teclas no responden.', status: 'recibido', priority: 'media', evidence: 'tecla_rota.png', fixTime: null },
+                { id: 4, lab: 'Lab 105 (FADCOM)', pc: 5, description: 'Monitor no da imagen.', status: 'resuelto', priority: 'baja', evidence: null, fixTime: '15 min' },
+                { id: 5, lab: 'Lab 102 (FIEC)', pc: 2, description: 'Mouse no funciona.', status: 'recibido', priority: 'baja', evidence: null, fixTime: null },
+                { id: 6, lab: 'Lab 101 (FIEC)', pc: 12, description: 'Pantalla azul al iniciar Windows.', status: 'recibido', priority: 'alta', evidence: 'bsod.jpg', fixTime: null },
+            ];
+
+            const softwareDB = {
+                'FIEC': ['Python', 'Java', 'Docker', 'VS Code', 'Matlab'],
+                'FIMCP': ['AutoCAD', 'SolidWorks', 'Matlab'],
+                'FADCOM': ['Adobe Illustrator', 'Photoshop', 'Blender'],
+                'FCV': ['RStudio', 'BioPython', 'Office 365'],
+                'FCNM': ['Matlab', 'Python', 'RStudio'],
+                'BIBLIOTECA': ['Office 365', 'Chrome', 'Adobe Reader'],
+                'General': ['Office 365', 'Chrome']
+            };
+            const hardwareDB = [
+                "Core i7, 16GB RAM, 512GB SSD",
+                "Core i5, 8GB RAM, 256GB SSD",
+                "Ryzen 5, 16GB RAM, 1TB SSD",
+                "Core i9, 32GB RAM, 1TB NVMe"
+            ];
+
+            const screenInfo = {
+                'screen-login': { title: '👋 Bienvenido', text: 'Ingresa con tu cuenta institucional', dot: 1 },
+                'screen-menu-student': { title: '📱 Menú Estudiante', text: 'Accede a las funciones disponibles para estudiantes', dot: 2 },
+                'screen-menu-support': { title: '🔧 Menú Soporte Técnico', text: 'Gestiona los reportes y equipos del laboratorio', dot: 2 },
+                'screen-lab-list': { title: '🔬 Lista de Laboratorios', text: 'Selecciona un laboratorio o busca por software', dot: 3 },
+                'screen-lab': { title: '🖥️ Disponibilidad de Lab', text: 'Vista en tiempo real del estado de los computadores', dot: 4 },
+                'screen-report': { title: '⚠️ Reportar Problema', text: 'Envía un reporte detallado sobre algún equipo con fallas', dot: 4 },
+                'screen-history': { title: '🔔 Historial de Reportes', text: 'Consulta el estado de tus reportes atendidos', dot: 3 },
+                'screen-faults': { title: '📋 Equipos con Fallas', text: 'Lista de todos los reportes pendientes de atención', dot: 3 },
+                'screen-detail': { title: '🔍 Detalle del Reporte', text: 'Revisa la información del problema y gestiónalo', dot: 4 },
+                'screen-notification': { title: '🔔 Notificación', text: 'Información importante sobre tus acciones', dot: 4 },
+                'screen-dashboard': { title: '📊 Dashboard Soporte', text: 'Métricas de rendimiento de los laboratorios', dot: 3 },
+            };
+
+            const labFaculties = {
+                101: "FIEC", 102: "FIEC", 103: "FIMCP", 104: "FIMCP", 105: "FADCOM",
+                106: "FADCOM", 107: "FCV", 108: "FCV", 109: "FCNM", 110: "BIBLIOTECA"
+            };
+
+
+            // --- INICIALIZACIÓN ---
+
+            document.addEventListener('DOMContentLoaded', () => {
+                initializeLabs();
+                populateLabSelect();
+                populateFaultFilters();
+                updateFaultList();
+                updateHistoryList();
+                updateScreenInfo();
+                updateNotificationDot();
+                document.getElementById('last-updated').textContent = `Última actualización: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(currentScreen).classList.add('active');
+            });
+
+            // --- LÓGICA DE NAVEGACIÓN ---
+
+            function navigateTo(screenId, animation = 'slide-left', data = null) {
+                const oldScreen = document.getElementById(currentScreen);
+                const newScreen = document.getElementById(screenId);
+
+                if (oldScreen === newScreen) return;
+                if (animation !== 'fade' && animation !== 'slide-right') {
+                    previousScreenStack.push({ screen: currentScreen, data: null });
+                }
+                oldScreen.className = 'screen';
+                newScreen.className = 'screen';
+                if (animation === 'slide-left') {
+                    oldScreen.classList.add('slide-left-out');
+                    newScreen.classList.add('active', 'slide-left-in');
+                } else if (animation === 'slide-right') {
+                    oldScreen.classList.add('slide-right-out');
+                    newScreen.classList.add('active', 'slide-right-in');
+                } else if (animation === 'fade') {
+                    oldScreen.classList.add('fade-out');
+                    newScreen.classList.add('active', 'fade-in');
+                }
+                setTimeout(() => {
+                    oldScreen.classList.remove('active');
+                }, 400);
+                currentScreen = screenId;
+
+                // Acciones específicas
+                if (screenId === 'screen-lab-list') {
+                    initializeLabs();
+                    renderLabList();
+                    if (userRole === 'student') {
+                        renderRecommendationCard();
+                        document.getElementById('prefs-icon-btn').style.display = 'block';
+                    } else {
+                        document.getElementById('recommendation-card').style.display = 'none';
+                        document.getElementById('prefs-icon-btn').style.display = 'none';
+                    }
+                }
+                if (screenId === 'screen-history') {
+                    updateHistoryList();
+                }
+                if (screenId === 'screen-faults') {
+                    populateFaultFilters();
+                    updateFaultList();
+                }
+                if (screenId === 'screen-dashboard') {
+                    updateDashboard();
+                }
+                if (screenId === 'screen-roles') {
+                    previousScreenStack = [{ screen: 'screen-roles', data: null }];
+                }
+
+                if (screenId === 'screen-campus-map') {
+                    mapZoom = 1;
+                    setTimeout(applyMapZoom, 0);
+                }
+                updateScreenInfo();
+            }
+
+            function navigateBack(animation = 'slide-right') {
+                if (currentScreen === 'screen-report') {
+                    const labSelect = document.getElementById('lab-select');
+                    labSelect.disabled = false;
+                    labSelect.value = "";
+                    document.getElementById('pc-number').value = '';
+                    document.getElementById('fault-description').value = '';
+                    simulatedEvidenceFile = null;
+                    const fileNameSpan = document.getElementById('file-name-span');
+                    fileNameSpan.textContent = '';
+                    fileNameSpan.style.display = 'none';
+                }
+
+                const prevState = previousScreenStack.pop();
+                if (prevState) {
+                    navigateTo(prevState.screen, animation, prevState.data);
+                }
+            }
+
+            // --- MODIFICADO: Ya no es una función global, es parte del login ---
+            function handleLogin() {
+                const email = document.getElementById('login-email').value.toLowerCase();
+                const pass = document.getElementById('login-password').value;
+                const error = document.getElementById('login-error');
+                const btn = document.getElementById('login-button');
+
+                btn.classList.add('loading');
+                btn.disabled = true;
+                error.style.display = 'none';
+
+                setTimeout(() => {
+                    let role = null;
+
+                    if (email === 'estudiante@espol.edu.ec' && pass === 'estudiante') {
+                        role = 'student';
+                        navigateTo('screen-menu-student', 'fade');
+                    } else if (email === 'soporte@espol.edu.ec' && pass === 'soporte') {
+                        role = 'support';
+                        navigateTo('screen-menu-support', 'fade');
+                    } else {
+                        error.textContent = "Correo o contraseña incorrectos.";
+                        error.style.display = 'block';
+                    }
+
+                    userRole = role; // Actualiza el rol global
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                }, 1000);
+            }
+
+            function updateScreenInfo() {
+                const info = screenInfo[currentScreen];
+                if (info) {
+                    let title = info.title.split(' ')[1] || "ESPOL";
+                    if (currentScreen === 'screen-lab' && selectedLab) {
+                        title = `${selectedLab.name}`;
+                    }
+
+                    const titleElement = document.getElementById(currentScreen).querySelector('.title');
+                    if (titleElement) {
+                        titleElement.innerHTML = `${title}`;
+                    }
+
+                    // --- MODIFICADO: No mostrar panel de info en el login ---
+                    const infoPanel = document.getElementById('info-panel');
+                    const navDots = document.getElementById('nav-dots');
+
+                    if (currentScreen === 'screen-login') {
+                        infoPanel.style.display = 'none';
+                        navDots.style.display = 'none';
+                    } else {
+                        infoPanel.style.display = 'block';
+                        navDots.style.display = 'flex';
+
+                        document.getElementById('info-title').textContent = info.title;
+                        document.getElementById('info-text').textContent = info.text;
+
+                        document.querySelectorAll('.dot').forEach(dot => {
+                            dot.classList.remove('active');
+                            if (parseInt(dot.dataset.dot) === info.dot) {
+                                dot.classList.add('active');
+                            }
+                        });
+
+                        infoPanel.style.transform = 'translateY(10px)';
+                        infoPanel.style.opacity = '0';
+                        setTimeout(() => {
+                            infoPanel.style.transform = 'translateY(0)';
+                            infoPanel.style.opacity = '1';
+                        }, 100);
+                    }
+                }
+            }
+
+            function updateNotificationDot() {
+                const dot = document.getElementById('notification-dot');
+                if (newNotification) {
+                    dot.classList.remove('hidden');
+                } else {
+                    dot.classList.add('hidden');
+                }
+            }
+
+            function clearNotificationAndNavigate() {
+                newNotification = false;
+                updateNotificationDot();
+                navigateTo('screen-history', 'slide-left');
+            }
+
+            // --- LÓGICA DE PANTALLAS (LABS & FILTRO) ---
+
+            function initializeLabs() {
+                labs = [];
+                const favs = JSON.parse(localStorage.getItem('favoriteLabs')) || [];
+
+                for (let i = 1; i <= 10; i++) {
+                    const id = 100 + i;
+                    const faculty = labFaculties[id] || "General";
+                    const labSoftware = softwareDB[faculty] || softwareDB['General'];
+                    const availablePCs = Math.floor(Math.random() * 10) + 1;
+
+                    labs.push({
+                        id: id,
+                        name: `Lab ${id}`,
+                        faculty: faculty,
+                        favorite: favs.includes(id),
+                        software: labSoftware,
+                        available: availablePCs
+                    });
+                }
+                labs.sort((a, b) => b.favorite - a.favorite || a.id - b.id);
+            }
+
+            function renderRecommendationCard() {
+                const card = document.getElementById('recommendation-card');
+                const cardText = document.getElementById('rec-lab-text');
+
+                if (labs.length === 0) {
+                    card.style.display = 'none';
+                    return;
+                }
+                const bestLab = [...labs].sort((a, b) => b.available - a.available)[0];
+
+                if (bestLab && bestLab.available > 0) {
+                    cardText.textContent = `${bestLab.name} (${bestLab.faculty}) - ${bestLab.available} Libres`;
+                    card.style.display = 'flex';
+                    card.onclick = (e) => {
+                        selectLab(bestLab);
+                    };
+                } else {
+                    card.style.display = 'none';
+                }
+            }
+
+            function renderLabList() {
+                const list = document.getElementById('lab-list');
+                const filter = document.getElementById('lab-search') ? document.getElementById('lab-search').value.toLowerCase() : "";
+                const emptyState = document.getElementById('lab-empty-state');
+                list.innerHTML = '';
+
+                const filteredLabs = labs.filter(lab =>
+                    lab.name.toLowerCase().includes(filter) ||
+                    lab.faculty.toLowerCase().includes(filter) ||
+                    lab.software.some(s => s.toLowerCase().includes(filter))
+                );
+
+                if (filteredLabs.length === 0) {
+                    emptyState.style.display = 'block';
+                } else {
+                    emptyState.style.display = 'none';
+                    filteredLabs.forEach(lab => {
+                        const item = document.createElement('div');
+                        item.className = 'lab-item';
+                        const swTags = lab.software.map(s => {
+                            const isMatch = filter.length > 0 && s.toLowerCase().includes(filter);
+                            return `<span class="sw-tag ${isMatch ? 'highlight' : ''}">${s}</span>`;
+                        }).slice(0, 3).join('');
+
+                        item.innerHTML = `
+                        <div class="lab-item-main" onclick="selectLabById(${lab.id})">
+                            <div class="lab-item-info">
+                                <div class="lab-icon">🔬</div>
+                                <div class="lab-text-container">
+                                    <div class="lab-text">${lab.name}</div>
+                                    <div class="lab-faculty">${lab.faculty}</div>
+                                </div>
+                                <div class="fav-star">${lab.favorite ? '⭐' : '☆'}</div>
+                            </div>
+                            <div class="software-tags">${swTags}</div>
+                        </div>
+                    `;
+                        list.appendChild(item);
+                    });
+                }
+                list.appendChild(emptyState);
+            }
+
+            function filterLabs() {
+                renderLabList();
+            }
+
+            function selectLabById(labId) {
+                const lab = labs.find(l => l.id === labId);
+                if (lab) selectLab(lab);
+            }
+
+            function selectLab(lab) {
+                selectedLab = lab;
+                document.getElementById('lab-detail-title').innerHTML = `${lab.name} (${lab.faculty})`;
+                generatePCGrid();
+                const legend = document.getElementById('status-legend');
+                const infoCard = document.getElementById('lab-info-card');
+
+                if (userRole === 'student') {
+                    legend.classList.add('student-view');
+                    infoCard.style.display = 'block';
+                    const totalPCs = 12;
+                    const available = pcStates.filter(s => s === 'pc-available').length;
+                    const occupationPercent = ((totalPCs - available) / totalPCs) * 100;
+                    document.getElementById('occupation-fill').style.width = `${occupationPercent}%`;
+                    document.getElementById('popular-software-tags').innerHTML = lab.software.slice(0, 3).map(s => `<span class="sw-tag compact">${s}</span>`).join('');
+                } else {
+                    legend.classList.remove('student-view');
+                    infoCard.style.display = 'none';
+                }
+                navigateTo('screen-lab', 'slide-left');
+            }
+
+            function openPrefsModal() {
+                const modal = document.getElementById('prefs-modal');
+                const list = document.getElementById('prefs-lab-list');
+                list.innerHTML = '';
+                labs.sort((a, b) => a.id - b.id);
+                labs.forEach(lab => {
+                    const item = document.createElement('div');
+                    item.className = 'prefs-item';
+                    item.innerHTML = `
+                    <div>
+                        <span>${lab.name}</span>
+                        <span>${lab.faculty}</span>
+                    </div>
+                    <span class="fav-toggle" onclick="toggleFavorite(${lab.id})">
+                        ${lab.favorite ? '⭐' : '☆'}
+                    </span>
+                `;
+                    list.appendChild(item);
+                });
+                modal.style.display = 'flex';
+            }
+
+            function closePrefsModal() {
+                document.getElementById('prefs-modal').style.display = 'none';
+                labs.sort((a, b) => b.favorite - a.favorite || a.id - b.id);
+                renderLabList();
+            }
+
+            function toggleFavorite(labId) {
+                const lab = labs.find(l => l.id === labId);
+                if (lab) {
+                    lab.favorite = !lab.favorite;
+                }
+                const favs = labs.filter(l => l.favorite).map(l => l.id);
+                localStorage.setItem('favoriteLabs', JSON.stringify(favs));
+                openPrefsModal();
+            }
+
+            // --- LÓGICA DE PANTALLAS (PCS y REPORTES) ---
+
+            // --- MODIFICADO: GRID CINE ---
+            function generatePCGrid(isUpdating = false) {
+                const grid = document.getElementById('pc-grid');
+                grid.innerHTML = '';
+                // Config grid para layout Cine
+                grid.style.display = 'grid';
+                grid.style.gridTemplateColumns = 'auto repeat(2, 1fr) 20px repeat(2, 1fr)'; // Label, 2 pcs, pasillo, 2 pcs
+                grid.style.gap = '10px 6px';
+
+                const states = ['pc-available', 'pc-occupied', 'pc-damaged', 'pc-maintenance'];
+                const counts = { 'pc-available': 0, 'pc-occupied': 0, 'pc-damaged': 0, 'pc-maintenance': 0 };
+
+                if (!isUpdating || pcStates.length === 0) {
+                    pcStates = [];
+                    for (let i = 0; i < 12; i++) {
+                        if (i < 5) pcStates.push(states[0]);
+                        else if (i < 8) pcStates.push(states[1]);
+                        else if (i < 10) pcStates.push(states[2]);
+                        else pcStates.push(states[3]);
+                    }
+                    pcStates.sort(() => Math.random() - 0.5);
+                }
+
+                const rows = ['A', 'B', 'C']; // 3 filas de 4 PCs = 12 PCs
+                let pcIndex = 0;
+
+                rows.forEach(rowLabel => {
+                    // Label Fila
+                    const label = document.createElement('div');
+                    label.textContent = rowLabel;
+                    label.className = 'row-label';
+                    grid.appendChild(label);
+
+                    // Renderizar PCs con pasillo
+                    for (let i = 1; i <= 4; i++) {
+                        if (i === 3) { // Pasillo antes de la 3ra PC
+                            const aisle = document.createElement('div');
+                            grid.appendChild(aisle);
+                        }
+
+                        const state = pcStates[pcIndex];
+                        const pcNum = pcIndex + 1;
+
+                        // --- Lógica visual para estudiantes ---
+                        let displayClass = state;
+                        let isClickable = false;
+
+                        if (userRole === 'student') {
+                            // Estudiante solo ve disponibles o su reserva
+                            if (state === 'pc-available') {
+                                displayClass = 'pc-available';
+                                isClickable = true;
+                            } else if (currentReservation && currentReservation.pc === pcNum && currentReservation.lab === selectedLab.name) {
+                                displayClass = 'pc-reserved'; // Color Morado
+                                isClickable = true;
+                            } else {
+                                displayClass = 'pc-occupied'; // Máscara para ocupado/dañado
+                                isClickable = false;
+                            }
+                        } else {
+                            isClickable = true; // Soporte ve todo
+                        }
+
+                        const pcContainer = document.createElement('div');
+                        pcContainer.className = 'pc-item-container';
+                        const pc = document.createElement('div');
+                        pc.className = `pc-icon ${displayClass}`;
+                        if (isUpdating) pc.classList.add('pc-updating');
+                        pc.innerHTML = `<img src="pc-icon.png" alt="PC" class="pc-img">`;
+                        pcContainer.appendChild(pc);
+                        const pcLabel = document.createElement('span');
+                        pcLabel.className = 'pc-label';
+                        pcLabel.textContent = `${rowLabel}-${i}`; // Ej: A-1
+                        pcContainer.appendChild(pcLabel);
+
+                        if (isClickable) {
+                            pcContainer.onclick = () => openPCInfoModal(pcNum, displayClass, rowLabel + '-' + i);
+                        }
+
+                        grid.appendChild(pcContainer);
+
+                        if (userRole !== 'student') counts[state]++; // Count real
+                        else if (state === 'pc-available') counts['pc-available']++; // Student count
+
+                        pcIndex++;
+                    }
+                });
+
+                document.getElementById('available-count').textContent = `Disponible: ${counts['pc-available']}`;
+                document.getElementById('occupied-count').textContent = `En uso: ${counts['pc-occupied']}`;
+                document.getElementById('damaged-count').textContent = `Dañado: ${counts['pc-damaged']}`;
+
+                // Mostrar Leyenda "Tu Reserva" si aplica
+                const legendReserved = document.getElementById('legend-reserved');
+                if (currentReservation && selectedLab.name === currentReservation.lab) {
+                    legendReserved.style.display = 'flex';
+                } else {
+                    legendReserved.style.display = 'none';
+                }
+
+
+                if (isUpdating) {
+                    setTimeout(() => {
+                        document.querySelectorAll('.pc-icon').forEach(pc => pc.classList.remove('pc-updating'));
+                    }, 800);
+                }
+            }
+
+            function updatePCStatus() {
+                const btn = document.getElementById('update-btn');
+                btn.classList.add('loading');
+                btn.disabled = true;
+
+                setTimeout(() => {
+                    pcStates = pcStates.map(state => {
+                        if (state === 'pc-available' || state === 'pc-occupied') {
+                            if (Math.random() < 0.3) {
+                                return state === 'pc-available' ? 'pc-occupied' : 'pc-available';
+                            }
+                        }
+                        return state;
+                    });
+                    generatePCGrid(true);
+
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                    document.getElementById('last-updated').textContent = `Última actualización: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+                }, 1000);
+            }
+
+            function populateLabSelect() {
+                const select = document.getElementById('lab-select');
+                select.innerHTML = '<option value="">Seleccione un laboratorio...</option>';
+                labs.sort((a, b) => a.id - b.id).forEach(lab => {
+                    const option = document.createElement('option');
+                    option.value = `${lab.name} (${lab.faculty})`;
+                    option.textContent = `${lab.name} (${lab.faculty})`;
+                    select.appendChild(option);
+                });
+            }
+
+            function openReportScreen() {
+                navigateTo('screen-report', 'slide-left');
+                const labSelect = document.getElementById('lab-select');
+                labSelect.disabled = false;
+                labSelect.value = "";
+                document.getElementById('pc-number').value = '';
+                document.getElementById('fault-description').value = '';
+                simulatedEvidenceFile = null;
+                const fileNameSpan = document.getElementById('file-name-span');
+                fileNameSpan.textContent = '';
+                fileNameSpan.style.display = 'none';
+            }
+
+            function simulateFileUpload() {
+                simulatedEvidenceFile = `evidencia_${Date.now() % 1000}.jpg`;
+                const fileNameSpan = document.getElementById('file-name-span');
+                fileNameSpan.textContent = `✔️ Archivo adjunto: ${simulatedEvidenceFile}`;
+                fileNameSpan.style.display = 'block';
+            }
+
+            function submitReport() {
+                const labName = document.getElementById('lab-select').value;
+                const pc = document.getElementById('pc-number').value;
+                const desc = document.getElementById('fault-description').value;
+                const btn = document.getElementById('submit-report-btn');
+
+                if (!labName || !pc || !desc) {
+                    showNotification('Error', 'Por favor completa todos los campos.', '⚠️');
+                    return;
+                }
+
+                btn.classList.add('loading');
+                btn.disabled = true;
+
+                setTimeout(() => {
+                    const priorities = ['baja', 'media', 'alta'];
+                    const newReport = {
+                        id: faultReports.length + Date.now(),
+                        lab: labName,
+                        pc: parseInt(pc),
+                        description: desc,
+                        status: 'recibido',
+                        evidence: simulatedEvidenceFile,
+                        priority: priorities[Math.floor(Math.random() * 3)],
+                        fixTime: null
+                    };
+
+                    faultReports.unshift(newReport);
+                    updateFaultList();
+
+                    if (selectedLab && labName === `${selectedLab.name} (${selectedLab.faculty})` && pc <= pcStates.length) {
+                        pcStates[pc - 1] = 'pc-damaged';
+                        generatePCGrid(false);
+                    }
+
+                    // Limpiar form
+                    document.getElementById('lab-select').disabled = false;
+                    document.getElementById('lab-select').value = "";
+                    document.getElementById('pc-number').value = '';
+                    document.getElementById('fault-description').value = '';
+                    simulatedEvidenceFile = null;
+                    const fileNameSpan = document.getElementById('file-name-span');
+                    fileNameSpan.textContent = '';
+                    fileNameSpan.style.display = 'none';
+
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+
+                    showNotification('Reporte Enviado', 'Tu reporte ha sido recibido y será atendido pronto.', '🔔');
+                }, 1000);
+            }
+
+            function populateFaultFilters() {
+                const labFilter = document.getElementById('filter-lab');
+                labFilter.innerHTML = '<option value="">Todos los Labs</option>'; // Reset
+
+                const uniqueLabs = [...new Set(faultReports.map(r => r.lab.split(' ')[0] + ' ' + r.lab.split(' ')[1]))]; // "Lab 101"
+
+                uniqueLabs.forEach(labName => {
+                    const option = document.createElement('option');
+                    option.value = labName;
+                    option.textContent = labName;
+                    labFilter.appendChild(option);
+                });
+            }
+
+            function updateFaultList() {
+                const list = document.getElementById('fault-list');
+                const emptyState = document.getElementById('fault-empty-state');
+                list.innerHTML = '';
+
+                const labFilter = document.getElementById('filter-lab').value;
+                const priorityFilter = document.getElementById('filter-priority').value;
+                let filteredReports = faultReports.filter(r => r.status !== 'resuelto');
+                if (labFilter) {
+                    filteredReports = filteredReports.filter(r => r.lab.startsWith(labFilter));
+                }
+                if (priorityFilter) {
+                    filteredReports = filteredReports.filter(r => r.priority === priorityFilter);
+                }
+                const groupedReports = filteredReports.reduce((acc, report) => {
+                    const key = `${report.lab}-PC${report.pc}`;
+                    if (!acc[key]) {
+                        acc[key] = {
+                            key: key,
+                            lab: report.lab,
+                            pc: report.pc,
+                            priority: report.priority,
+                            count: 0,
+                            reports: []
+                        };
+                    }
+                    acc[key].count++;
+                    acc[key].reports.push(report);
+                    return acc;
+                }, {});
+
+                const reportGroups = Object.values(groupedReports);
+
+                if (reportGroups.length === 0) {
+                    emptyState.style.display = 'block';
+                } else {
+                    emptyState.style.display = 'none';
+                    reportGroups.sort((a, b) => {
+                        const priorityOrder = { 'alta': 3, 'media': 2, 'baja': 1 };
+                        return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+                    });
+                    reportGroups.forEach(group => {
+                        const item = document.createElement('div');
+                        item.className = 'list-item clickable';
+                        const latestDescription = group.reports[0].description;
+                        const latestStatus = group.reports.some(r => r.status === 'en revision') ? 'en revision' : 'recibido';
+                        item.innerHTML = `
+                        ${group.count > 1 ? `<span class="report-group-count">x${group.count}</span>` : ''}
+                        <div class="list-title">${group.lab} - PC ${group.pc}</div>
+                        <div class="list-desc">${latestDescription}</div>
+                        <div class="status-badge status-${latestStatus.replace(' ', '.')}">${latestStatus.charAt(0).toUpperCase() + latestStatus.slice(1)}</div>
+                    `;
+                        item.onclick = () => showFaultDetail(group.key);
+                        list.appendChild(item);
+                    });
+                }
+                list.appendChild(emptyState);
+                const pendingCount = filteredReports.length;
+                document.getElementById('fault-badge').textContent = pendingCount;
+                document.getElementById('fault-badge').style.display = pendingCount > 0 ? 'flex' : 'none';
+            }
+
+            function updateHistoryList() {
+                const list = document.getElementById('history-list');
+                const emptyState = document.getElementById('history-empty-state');
+                const activeResCard = document.getElementById('active-reservation-card');
+
+                // --- NUEVO: Mostrar Reserva Activa ---
+                if (currentReservation) {
+                    activeResCard.style.display = 'block';
+                    document.getElementById('hist-res-pc').innerText = `${currentReservation.lab} - ${currentReservation.seatId}`;
+                    document.getElementById('hist-res-time').innerText = currentReservation.time;
+                } else {
+                    activeResCard.style.display = 'none';
+                }
+
+                list.innerHTML = '';
+
+                const allReports = faultReports;
+
+                if (allReports.length === 0) {
+                    emptyState.style.display = 'block';
+                } else {
+                    emptyState.style.display = 'none';
+                    allReports.sort((a, b) => b.id - a.id).forEach(report => {
+                        const item = document.createElement('div');
+                        item.className = 'list-item';
+                        const statusText = report.status.charAt(0).toUpperCase() + report.status.slice(1);
+                        item.innerHTML = `
+                        <div class="list-title">${report.lab} - PC ${report.pc}</div>
+                        <div class="list-desc">${report.description}</div>
+                        <div class="status-badge status-${report.status.replace(' ', '.')}">${statusText}</div>
+                        ${report.fixTime ? `<div class="history-fix-time">Tiempo de reparación: ${report.fixTime}</div>` : ''}
+                    `;
+                        list.appendChild(item);
+                    });
+                }
+                list.appendChild(emptyState);
+            }
+
+            function showFaultDetail(reportKey) {
+                const report = faultReports.find(r => `${r.lab}-PC${r.pc}` === reportKey);
+                if (!report) return;
+                selectedFaultKey = reportKey;
+                const groupCount = faultReports.filter(r => `${r.lab}-PC${r.pc}` === reportKey && r.status !== 'resuelto').length;
+                document.getElementById('detail-title').textContent = `${report.lab} - PC ${report.pc} ${groupCount > 1 ? `(x${groupCount} reportes)` : ''}`;
+                document.getElementById('detail-description').textContent = report.description;
+                const pcIcon = document.getElementById('detail-pc-icon');
+                pcIcon.className = 'pc-icon-large pc-damaged';
+                const evidenceSection = document.getElementById('detail-evidence-section');
+                if (report.evidence) {
+                    document.getElementById('detail-evidence-link').textContent = `📁 ${report.evidence}`;
+                    evidenceSection.style.display = 'block';
+                } else {
+                    evidenceSection.style.display = 'none';
+                }
+                navigateTo('screen-detail', 'slide-left');
+            }
+
+            function openFixModal() {
+                if (!selectedFaultKey) return;
+                document.getElementById('report-status-select').value = 'en revision';
+                document.getElementById('report-time-input').value = '';
+                document.getElementById('time-input-group').style.display = 'none';
+                document.getElementById('fix-time-modal').style.display = 'flex';
+            }
+
+            function closeFixModal() {
+                document.getElementById('fix-time-modal').style.display = 'none';
+            }
+
+            function toggleTimeInput(status) {
+                const timeGroup = document.getElementById('time-input-group');
+                if (status === 'en proceso') {
+                    timeGroup.style.display = 'block';
+                } else {
+                    timeGroup.style.display = 'none';
+                }
+            }
+
+            function confirmFix() {
+                if (!selectedFaultKey) return;
+                const newStatus = document.getElementById('report-status-select').value;
+                let time = null;
+
+                if (newStatus === 'en proceso') {
+                    time = document.getElementById('report-time-input').value;
+                    if (!time) {
+                        alert("Por favor, ingresa un tiempo estimado de reparación.");
+                        return;
+                    }
+                }
+
+                let affectedReports = [];
+                faultReports.forEach(report => {
+                    if (`${report.lab}-PC${report.pc}` === selectedFaultKey && report.status !== 'resuelto') {
+                        report.status = newStatus;
+                        if (newStatus === 'en proceso') {
+                            report.fixTime = time;
+                        }
+                        affectedReports.push(report);
+                    }
+                });
+                if (affectedReports.length === 0) {
+                    closeFixModal();
+                    return;
+                }
+                const report = affectedReports[0];
+                if (newStatus === 'resuelto') {
+                    if (selectedLab && report.lab === `${selectedLab.name} (${selectedLab.faculty})` && report.pc <= pcStates.length) {
+                        pcStates[report.pc - 1] = 'pc-available';
+                        generatePCGrid(false);
+                    }
+                    newNotification = true;
+                    updateNotificationDot();
+                }
+                selectedFaultKey = null;
+                updateFaultList();
+                closeFixModal();
+                showNotification(
+                    'Reporte Actualizado',
+                    `El reporte para la PC ${report.pc} ha sido marcado como "${newStatus}".`,
+                    '✅'
+                );
+            }
+
+            function showNotification(title, message, icon = '🔔') {
+                if (currentScreen !== 'screen-notification') {
+                    previousScreenStack.push({ screen: currentScreen, data: null });
+                }
+                document.getElementById('notification-icon').textContent = icon;
+                document.getElementById('notification-message').innerHTML = `<strong>${title}</strong><br><br>${message}`;
+                navigateTo('screen-notification', 'fade');
+            }
+
+            // --- MODIFICADO: Modal ahora tiene Reserva ---
+            function openPCInfoModal(pcNumber, stateClass, seatId) {
+
+                if (userRole === 'support') {
+                    openSupportPCModal(pcNumber, stateClass);
+                } else {
+                    const modal = document.getElementById('pc-info-modal');
+                    const title = document.getElementById('pc-modal-title');
+                    const icon = document.getElementById('pc-modal-icon');
+                    const badge = document.getElementById('pc-modal-status-badge');
+                    const bookingSection = document.getElementById('booking-section');
+                    const cancelSection = document.getElementById('cancel-section');
+                    const resError = document.getElementById('res-error');
+
+                    title.textContent = `${selectedLab.name} - PC ${seatId}`;
+
+                    // --- Lógica de Visualización de Estado ---
+                    let isMyRes = false;
+                    if (currentReservation && currentReservation.pc === pcNumber && currentReservation.lab === selectedLab.name) {
+                        isMyRes = true;
+                    }
+
+                    if (isMyRes) {
+                        icon.className = `pc-icon-large pc-reserved`; // Usar estilo reserva
+                        badge.textContent = "Tu Reserva";
+                        badge.className = `status-badge status-en.proceso`; // Morado
+                        bookingSection.style.display = 'none';
+                        cancelSection.style.display = 'block';
+                    } else if (stateClass === 'pc-available') {
+                        icon.className = `pc-icon-large pc-available`;
+                        badge.textContent = "Disponible";
+                        badge.className = `status-badge status-resuelto`; // Verde
+
+                        // Validar si puede reservar
+                        if (currentReservation) {
+                            bookingSection.style.display = 'block';
+                            document.getElementById('time-slots').style.display = 'none'; // Ocultar slots
+                            document.getElementById('btn-reserve').style.display = 'none'; // Ocultar btn
+                            resError.style.display = 'block'; // Mostrar error
+                        } else {
+                            bookingSection.style.display = 'block';
+                            document.getElementById('time-slots').style.display = 'grid';
+                            document.getElementById('btn-reserve').style.display = 'flex';
+                            resError.style.display = 'none';
+                            generateTimeSlots(); // Generar horas
+                        }
+                        cancelSection.style.display = 'none';
+
+                    } else {
+                        // No disponible (no debería pasar por el filtro del click, pero por seguridad)
+                        return;
+                    }
+
+                    document.getElementById('pc-modal-hw').textContent = hardwareDB[pcNumber % hardwareDB.length];
+                    document.getElementById('pc-modal-sw').textContent = selectedLab.software.join(', ');
+
+                    selectedBookingSlot = null;
+                    document.getElementById('btn-reserve').disabled = true;
+                    document.getElementById('btn-reserve').style.background = "#9CA3AF";
+
+                    modal.style.display = 'flex';
+
+                    // Guardar datos para confirmar reserva
+                    currentSelectedPCIndex = pcNumber;
+                }
+            }
+
+            // --- NUEVO: Generar Slots de Tiempo ---
+
+
+            function updateMapZoomLabel() {
+                const label = document.getElementById('map-zoom-label');
+                if (label) {
+                    label.textContent = Math.round(mapZoom * 100) + '%';
+                }
+            }
+
+            function applyMapZoom() {
+                const img = document.getElementById('campus-map-img');
+                if (img) {
+                    img.style.transform = `scale(${mapZoom})`;
+                    updateMapZoomLabel();
+                }
+            }
+
+            function zoomInMap() {
+                mapZoom = Math.min(mapZoom + 0.25, 3);   // Máx 300%
+                applyMapZoom();
+            }
+
+            function zoomOutMap() {
+                mapZoom = Math.max(mapZoom - 0.25, 1);   // Mín 100%
+                applyMapZoom();
+            }
+
+            function resetMapZoom() {
+                mapZoom = 1;
+                applyMapZoom();
+            }
+
+            function generateTimeSlots() {
+                const container = document.getElementById('time-slots');
+                container.innerHTML = '';
+
+                const LAB_OPEN_HOUR = 8;   // 08:00
+                const LAB_CLOSE_HOUR = 18; // 18:00
+
+                const now = new Date();
+
+                // Minutos actuales desde las 00:00
+                let startMinutes = now.getHours() * 60 + now.getMinutes();
+
+                // Redondear al siguiente múltiplo de 15 min
+                startMinutes = Math.ceil(startMinutes / 15) * 15;
+
+                const labOpenMinutes = LAB_OPEN_HOUR * 60;
+                const labCloseMinutes = LAB_CLOSE_HOUR * 60;
+
+                // Asegurar que no se oferten horarios antes de abrir el laboratorio
+                if (startMinutes < labOpenMinutes) {
+                    startMinutes = labOpenMinutes;
+                }
+
+                // Ventana máxima de 1 hora desde el inicio
+                let limitMinutes = startMinutes + 60;
+                if (limitMinutes > labCloseMinutes) {
+                    limitMinutes = labCloseMinutes;
+                }
+
+                // Si ya pasó el horario del laboratorio
+                if (startMinutes >= labCloseMinutes) {
+                    container.innerHTML = '<p style="font-size:12px; color:#6B7280; grid-column:1/-1; text-align:center;">No hay horarios disponibles en el horario del laboratorio.</p>';
+                    const confirmBtn = document.getElementById('btn-reserve');
+                    confirmBtn.disabled = true;
+                    confirmBtn.style.background = "#9CA3AF";
+                    return;
+                }
+
+                for (let m = startMinutes; m < limitMinutes; m += 15) {
+                    const end = m + 15;
+                    if (end > labCloseMinutes) break;
+
+                    const startH = Math.floor(m / 60);
+                    const startM = m % 60;
+                    const endH = Math.floor(end / 60);
+                    const endM = end % 60;
+
+                    const timeStr = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')} - ${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+
+                    const btn = document.createElement('div');
+                    btn.className = 'time-btn'; // Reutilizar estilo
+                    btn.style.fontSize = '11px';
+                    btn.style.padding = '8px';
+                    btn.innerText = timeStr;
+                    btn.onclick = () => {
+                        document.querySelectorAll('#time-slots .time-btn').forEach(b => {
+                            b.style.borderColor = '#E5E7EB';
+                            b.style.background = '#F3F4F6';
+                        });
+                        btn.style.borderColor = '#0055A4';
+                        btn.style.background = '#EBF8FF';
+                        selectedBookingSlot = timeStr;
+                        const confirmBtn = document.getElementById('btn-reserve');
+                        confirmBtn.disabled = false;
+                        confirmBtn.style.background = "linear-gradient(135deg, #0055A4 0%, #003d7a 100%)";
+                    };
+                    container.appendChild(btn);
+                }
+
+                // Si por alguna razón no se generó ningún horario (ej. falta menos de 15min para cerrar)
+                if (!container.children.length) {
+                    container.innerHTML = '<p style="font-size:12px; color:#6B7280; grid-column:1/-1; text-align:center;">No hay horarios disponibles en la próxima hora.</p>';
+                    const confirmBtn = document.getElementById('btn-reserve');
+                    confirmBtn.disabled = true;
+                    confirmBtn.style.background = "#9CA3AF";
+                }
+            }
+
+            // --- NUEVO: Confirmar Reserva ---
+            function confirmReservation() {
+                if (!selectedBookingSlot) return;
+
+                // Crear reserva
+                const rows = ['A', 'B', 'C'];
+                const row = rows[Math.floor((currentSelectedPCIndex - 1) / 4)];
+                const col = ((currentSelectedPCIndex - 1) % 4) + 1;
+                const seatId = `${row}-${col}`;
+
+                currentReservation = {
+                    lab: selectedLab.name,
+                    pc: currentSelectedPCIndex,
+                    seatId: seatId,
+                    time: selectedBookingSlot
+                };
+
+                closePCInfoModal();
+                generatePCGrid(); // Actualizar visualmente
+                showNotification('Reserva Confirmada', `Has reservado la PC ${seatId} en ${selectedLab.name} para las ${selectedBookingSlot}.`, '🎟️');
+            }
+
+            // --- NUEVO: Cancelar Reserva ---
+            function cancelReservation() {
+                currentReservation = null;
+                closePCInfoModal(); // Si estaba abierto
+                if (currentScreen === 'screen-lab') generatePCGrid(); // Refrescar si estoy en el lab
+                if (currentScreen === 'screen-history') updateHistoryList(); // Refrescar historial
+                showNotification('Reserva Cancelada', `Tu reserva ha sido cancelada exitosamente.`, '🗑️');
+            }
+
+
+            function closePCInfoModal() {
+                document.getElementById('pc-info-modal').style.display = 'none';
+            }
+
+            function openSupportPCModal(pcNumber, stateClass) {
+                currentSelectedPCIndex = pcNumber - 1;
+                const modal = document.getElementById('support-pc-modal');
+                document.getElementById('support-modal-title').textContent = `Gestionar ${selectedLab.name} - PC ${String(pcNumber).padStart(2, '0')}`;
+
+                document.querySelectorAll('#state-btn-group .state-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.classList.contains(stateClass.replace('pc-', ''))) {
+                        btn.classList.add('active');
+                    }
+                });
+
+                const reportList = document.getElementById('support-modal-reports-list');
+                const associatedReports = faultReports.filter(r =>
+                    r.lab === `${selectedLab.name} (${selectedLab.faculty})` &&
+                    r.pc === pcNumber &&
+                    r.status !== 'resuelto'
+                );
+
+                if (associatedReports.length > 0) {
+                    reportList.innerHTML = '';
+                    associatedReports.forEach(r => {
+                        reportList.innerHTML += `
+                        <div class="support-report-item">
+                            <strong>${r.status.toUpperCase()}: ${r.priority}</strong>
+                            ${r.description}
+                        </div>
+                    `;
+                    });
+                } else {
+                    reportList.innerHTML = '<p style="text-align: center; font-size: 12px; color: #6B7280;">No hay reportes activos para esta PC.</p>';
+                }
+
+                modal.style.display = 'flex';
+            }
+
+            function closeSupportPCModal() {
+                document.getElementById('support-pc-modal').style.display = 'none';
+            }
+
+            function changePCState(newState) {
+                if (currentSelectedPCIndex === null) return;
+
+                pcStates[currentSelectedPCIndex] = newState;
+
+                if (newState === 'pc-available') {
+                    const pcNumber = currentSelectedPCIndex + 1;
+                    faultReports.forEach(r => {
+                        if (r.lab === `${selectedLab.name} (${selectedLab.faculty})` && r.pc === pcNumber && r.status !== 'resuelto') {
+                            r.status = 'resuelto';
+                            r.fixTime = 'N/A (Forzado)';
+                        }
+                    });
+                    updateFaultList();
+                    newNotification = true;
+                    updateNotificationDot();
+                }
+
+                closeSupportPCModal();
+                generatePCGrid(true);
+            }
+
+
+            // Dashboard
+            function updateDashboard() {
+                const pendingReports = faultReports.filter(r => r.status !== 'resuelto');
+                const totalPCs = labs.length * 12;
+                const totalDamaged = [...new Set(pendingReports.map(r => `${r.lab}-PC${r.pc}`))].length;
+                const operability = (((totalPCs - totalDamaged) / totalPCs) * 100).toFixed(0);
+
+                document.getElementById('kpi-pending').textContent = pendingReports.length;
+                document.getElementById('kpi-operability').textContent = `${operability}%`;
+
+                const resolvedReports = faultReports.filter(r => r.status === 'resuelto' && r.fixTime);
+                let totalMinutes = 0;
+                resolvedReports.forEach(r => {
+                    if (r.fixTime.includes('15 min')) totalMinutes += 15;
+                    else if (r.fixTime.includes('30 min')) totalMinutes += 30;
+                    else if (r.fixTime.includes('1 hora')) totalMinutes += 60;
+                });
+                const avgTime = resolvedReports.length > 0 ? (totalMinutes / resolvedReports.length).toFixed(0) : 0;
+                document.getElementById('kpi-avg-time').textContent = resolvedReports.length > 0 ? `~${avgTime}m` : '--';
+
+                const statusCounts = { 'recibido': 0, 'en revision': 0, 'en proceso': 0 };
+                const statusColors = { 'recibido': '#FEF3C7', 'en revision': '#DBEAFE', 'en proceso': '#F3E8FF' };
+                const statusTextColors = { 'recibido': '#92400E', 'en revision': '#1E40AF', 'en proceso': '#6B21A8' };
+                pendingReports.forEach(r => {
+                    if (statusCounts.hasOwnProperty(r.status)) {
+                        statusCounts[r.status]++;
+                    }
+                });
+                const totalPending = pendingReports.length || 1;
+                let gradientString = 'conic-gradient(';
+                let currentDegree = 0;
+                const legend = document.getElementById('status-pie-legend');
+                legend.innerHTML = '';
+                for (const [status, count] of Object.entries(statusCounts)) {
+                    if (count > 0) {
+                        const percentage = (count / totalPending) * 360;
+                        const nextDegree = currentDegree + percentage;
+                        gradientString += `${statusColors[status]} ${currentDegree}deg ${nextDegree}deg, `;
+                        currentDegree = nextDegree;
+                        legend.innerHTML += `
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background-color: ${statusColors[status]}; border: 1px solid ${statusTextColors[status]}"></div>
+                            <span>${status.charAt(0).toUpperCase() + status.slice(1)} (${count})</span>
+                        </div>
+                    `;
+                    }
+                }
+                if (currentDegree < 360 && pendingReports.length > 0) {
+                    gradientString += `#E5E7EB ${currentDegree}deg 360deg`;
+                } else if (pendingReports.length === 0) {
+                    gradientString = '#E5E7EB';
+                }
+
+                gradientString = gradientString.endsWith(', ') ? gradientString.slice(0, -2) + ')' : gradientString;
+                document.getElementById('status-pie-chart').style.backgroundImage = gradientString;
+                if (pendingReports.length === 0) legend.innerHTML = '<span style="font-size: 12px; color: #6B7280;">No hay reportes activos.</span>';
+
+                const faultsByFaculty = {};
+                pendingReports.forEach(report => {
+                    const facultyMatch = report.lab.match(/\(([^)]+)\)/);
+                    if (facultyMatch) {
+                        const faculty = facultyMatch[1];
+                        faultsByFaculty[faculty] = (faultsByFaculty[faculty] || 0) + 1;
+                    }
+                });
+                const chartContainer = document.getElementById('faults-chart');
+                chartContainer.innerHTML = '';
+                const facultiesSorted = Object.entries(faultsByFaculty).sort(([, a], [, b]) => b - a);
+                const maxFaults = facultiesSorted.length > 0 ? facultiesSorted[0][1] : 1;
+                if (facultiesSorted.length === 0) {
+                    chartContainer.innerHTML = '<div class="empty-state" style="display:block; padding: 10px;"><div class="icon">📊</div><div class="title">Sin Fallas</div><div class="text" style="font-size:12px;">No hay fallas por facultad.</div></div>';
+                    return;
+                }
+                for (const [faculty, count] of facultiesSorted) {
+                    const percentage = (count / maxFaults) * 100;
+                    const row = document.createElement('div');
+                    row.className = 'bar-row';
+                    row.innerHTML = `
+                    <span class="bar-label">${faculty}</span>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width: 0%;"></div>
+                    </div>
+                    <span class="bar-value">${count}</span>
+                `;
+                    chartContainer.appendChild(row);
+                    setTimeout(() => {
+                        row.querySelector('.bar-fill').style.width = `${percentage}%`;
+                    }, 100);
+                }
+            }
+
+        </script>
+</body>
+
+</html>
