@@ -2245,13 +2245,25 @@
             <div id="screen-menu-student" class="screen">
                 <div class="menu-screen">
                     <div class="back-arrow" onclick="navigateTo('screen-login', 'fade')">←</div>
-                    <div class="header">
-                        <div class="title">Menú</div>
-                        <div class="notification-icon" onclick="clearNotificationAndNavigate()">
-                            🔔
-                            <div class="notification-dot hidden" id="notification-dot"></div>
+                    <div class="header" style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="width: 80px;">
+                            <div class="back-arrow" onclick="navigateTo('screen-login', 'fade')"
+                                style="position: static;">←</div>
                         </div>
-                        <div class="header-icon" style="right: 0;">🔒</div>
+
+                        <div class="title" style="flex: 1; text-align: center; width: auto;">Menú</div>
+
+                        <div
+                            style="display: flex; gap: 15px; align-items: center; width: 80px; justify-content: flex-end;">
+                            <div class="notification-icon" onclick="clearNotificationAndNavigate()"
+                                style="position: relative; right: auto; top: auto; transform: none;">
+                                🔔
+                                <div class="notification-dot hidden" id="notification-dot"></div>
+                            </div>
+
+                            <div class="sound-icon" onclick="toggleSound()" style="position: static; font-size: 24px;">
+                                🔊</div>
+                        </div>
                     </div>
                     <div class="menu-card">
                         <div class="menu-item" onclick="navigateTo('screen-lab-list', 'slide-left')">
@@ -2397,7 +2409,7 @@
                             </div>
                             <!-- Estado Mantenimiento -->
                             <div class="legend-item tech-only">
-                                <div class="legend-dot" style="background: #A78BFA;"></div>
+                                <div class="legend-dot" style="background: #a4a3a7;"></div>
                                 <span>Mantenim.</span>
                             </div>
                             <div class="legend-item tech-only">
@@ -2532,9 +2544,19 @@
             <div id="screen-menu-support" class="screen">
                 <div class="menu-screen">
                     <div class="back-arrow" onclick="navigateTo('screen-login', 'fade')">←</div>
-                    <div class="header">
-                        <div class="title">Soporte</div>
-                        <div class="header-icon" style="right: 0;">🔒</div>
+                    <div class="header" style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="width: 60px;">
+                            <div class="back-arrow" onclick="navigateTo('screen-login', 'fade')"
+                                style="position: static;">←</div>
+                        </div>
+
+                        <div class="title" style="flex: 1; text-align: center; width: auto;">Soporte</div>
+
+                        <div
+                            style="display: flex; gap: 15px; align-items: center; width: 60px; justify-content: flex-end;">
+                            <div class="sound-icon" onclick="toggleSound()" style="position: static; font-size: 24px;">
+                                🔊</div>
+                        </div>
                     </div>
                     <div class="menu-card">
                         <!-- Botón Dashboard -->
@@ -2970,6 +2992,7 @@
         }
 
         // --- MODIFICADO: Ya no es una función global, es parte del login ---
+        // --- LOGIN CORREGIDO ---
         function handleLogin() {
             const email = document.getElementById('login-email').value.toLowerCase();
             const pass = document.getElementById('login-password').value;
@@ -2981,20 +3004,19 @@
             error.style.display = 'none';
 
             setTimeout(() => {
-                let role = null;
-
+                // CORRECCIÓN: Asignamos 'userRole' ANTES de navegar para que el saludo sepa quién eres
                 if (email === 'estudiante@espol.edu.ec' && pass === 'estudiante') {
-                    role = 'student';
-                    navigateTo('screen-menu-student', 'fade');
+                    userRole = 'student'; // <--- Primero guardamos el rol
+                    navigateTo('screen-menu-student', 'fade'); // <--- Luego cambiamos de pantalla
                 } else if (email === 'soporte@espol.edu.ec' && pass === 'soporte') {
-                    role = 'support';
+                    userRole = 'support';
                     navigateTo('screen-menu-support', 'fade');
                 } else {
                     error.textContent = "Correo o contraseña incorrectos.";
                     error.style.display = 'block';
+                    userRole = null;
                 }
 
-                userRole = role; // Actualiza el rol global
                 btn.classList.remove('loading');
                 btn.disabled = false;
             }, 1000);
@@ -3010,7 +3032,24 @@
 
                 const titleElement = document.getElementById(currentScreen).querySelector('.title');
                 if (titleElement) {
-                    titleElement.innerHTML = `${title}`;
+                    // Si estamos en el menú, calculamos el saludo
+                    if (currentScreen === 'screen-menu-student' || currentScreen === 'screen-menu-support') {
+                        const hour = new Date().getHours();
+                        let greeting = "Hola";
+                        if (hour < 12) greeting = "Bienvenido";
+                        else if (hour < 18) greeting = "Bienvenido";
+                        else greeting = "Bienvenido";
+
+                        // Añadimos el nombre del rol (Estudiante o Soporte)
+                        const name = userRole === 'student' ? 'Estudiante' : 'Soporte';
+                        titleElement.innerHTML = `<div style="display:flex; flex-direction:column; line-height:1.2;">
+                            <span style="font-size:12px; color:#6B7280; font-weight:500;">${greeting},</span>
+                            <span>${name}</span>
+                        </div>`;
+                    } else {
+                        // Comportamiento normal para otras pantallas
+                        titleElement.innerHTML = `${title}`;
+                    }
                 }
 
                 // --- MODIFICADO: No mostrar panel de info en el login ---
@@ -4129,14 +4168,39 @@
         }
 
         // =========================================================
-        //  MOTOR "JUICY UI" (Sonidos, Confeti, Notificaciones)
+        //  MOTOR "JUICY UI" CORREGIDO (Sonidos, Confeti, Notificaciones)
         // =========================================================
 
         // --- 1. MOTOR DE SONIDO (Sintetizador Web Audio API) ---
+        // Definimos el contexto y la variable global
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let isSoundActive = true;
+
+        function toggleSound() {
+            isSoundActive = !isSoundActive; // Cambiamos de ON a OFF o viceversa
+
+            // Cambiar iconos en TODAS las pantallas
+            const icons = document.querySelectorAll('.sound-icon');
+            icons.forEach(icon => {
+                icon.textContent = isSoundActive ? '🔊' : '🔇';
+                icon.style.opacity = isSoundActive ? '1' : '0.5';
+
+                // Pequeña animación visual al pulsar
+                icon.style.transform = 'scale(1.2)';
+                setTimeout(() => icon.style.transform = 'scale(1)', 200);
+            });
+
+            // Solo hacemos sonar el "click" si acabamos de ACTIVAR el sonido
+            if (isSoundActive) playSound('click');
+        }
 
         function playSound(type) {
+            // --- REGLA DE ORO: Si está silenciado, DETENERSE AQUÍ ---
+            if (!isSoundActive) return;
+            // --------------------------------------------------------
+
             if (audioCtx.state === 'suspended') audioCtx.resume();
+
             const osc = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
             osc.connect(gainNode);
@@ -4183,6 +4247,11 @@
         }
 
         function createNote(freq, time) {
+            // --- REGLA DE ORO TAMBIÉN AQUÍ ---
+            // Esto evita que el sonido de éxito suene si estás en silencio
+            if (!isSoundActive) return;
+            // ---------------------------------
+
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
@@ -4194,7 +4263,6 @@
             osc.start(time);
             osc.stop(time + 0.5);
         }
-
         // Agregar sonido a TODOS los botones automáticamente
         document.addEventListener('click', (e) => {
             // Si es un botón o un elemento clicable, suena
@@ -4273,7 +4341,7 @@
             // Mantenimiento y Software
             { text: "Actualización de MATLAB finalizada en Lab 101.", avatar: "💾" },
             { text: "Soporte técnico ingresó al Lab 106.", avatar: "🔧" },
-            { text: "Internet restablecido en el área de FCV.", avatar: "📶" },
+            { text: "Internet restablecido en el lab-108 de FCV.", avatar: "📶" },
             { text: "Mantenimiento de PC-08 completado.", avatar: "🛠️" },
             { text: "Drivers de video actualizados en FADCOM.", avatar: "🖥️" },
 
@@ -4311,7 +4379,9 @@
 
         // Iniciar ciclo de vida simulado (cada 15 segundos aprox)
         setInterval(() => {
-            if (Math.random() > 0.6) { // 40% de probabilidad cada ciclo
+            // CAMBIO: Agregamos "userRole === 'student'"
+            // Así solo funciona si ya iniciaste sesión Y eres estudiante.
+            if (userRole === 'student' && Math.random() > 0.6) {
                 showSystemToast();
             }
         }, 8000);
