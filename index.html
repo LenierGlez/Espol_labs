@@ -285,14 +285,43 @@
             height: 100%;
         }
 
-        .login-logo {
-            color: white;
-            font-size: 48px;
-            font-weight: 800;
-            text-align: center;
-            margin-bottom: 40px;
-            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        .login-header {
+            display: flex;
+            /* Activa el modo flexible */
+            justify-content: center;
+            /* Fuerza el centrado horizontal perfecto */
+            align-items: center;
+            /* Fuerza el centrado vertical (si hubiera altura extra) */
+            width: 100%;
+            /* Asegura que el contenedor use todo el espacio disponible */
+            margin-bottom: 30px;
+            /* Mantiene tu margen inferior */
             animation: slideUpFade 0.6s ease-out;
+            /* Mantiene tu animación */
+        }
+
+        /* La imagen en sí */
+        /* La imagen del nuevo logo (Monitor + Texto) */
+        .login-logo {
+            width: 400px;
+            /* AUMENTADO: Un poco más ancho para este diseño */
+            height: auto;
+            /* Mantiene la proporción correcta */
+            object-fit: contain;
+
+            /* MANTENEMOS EL FILTRO BLANCO: */
+            /* Como el fondo del login es oscuro, este filtro vuelve
+               el logo azul a color BLANCO para que se lea perfecto. */
+            filter: brightness(0) invert(1) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+
+            transition: transform 0.3s ease;
+            margin-bottom: 10px;
+            /* Un pequeño ajuste de espacio */
+        }
+
+        /* Efecto al pasar el mouse */
+        .login-logo:hover {
+            transform: scale(1.05);
         }
 
         .login-card {
@@ -358,7 +387,18 @@
 
         /* Pantalla Menú */
         .menu-screen {
-            padding: 40px 30px;
+            padding: 30px 30px;
+            /* Un poco menos de relleno arriba */
+            height: 100%;
+            overflow-y: auto;
+            /* Scroll por si acaso */
+            scrollbar-width: none;
+        }
+
+        /* AQUÍ ESTÁ EL TRUCO: Reducimos el margen debajo del título */
+        .menu-screen .header {
+            margin-bottom: 15px !important;
+            /* Antes era 40px. Aquí ganamos el espacio. */
         }
 
         .header {
@@ -426,7 +466,9 @@
             border: 1.5px solid #CBD5F5;
             border-radius: 18px;
             padding: 20px;
+            /* RESTAURADO: Tamaño original grande */
             margin-bottom: 20px;
+            /* RESTAURADO: Separación original */
             display: flex;
             align-items: center;
             gap: 15px;
@@ -436,7 +478,8 @@
         }
 
         .menu-item:last-child {
-            margin-bottom: 0;
+            margin-bottom: 40px;
+            /* Espacio extra al final para scroll cómodo */
         }
 
         .menu-item:hover {
@@ -1776,11 +1819,7 @@
             background: radial-gradient(circle at top, #004471 0, #00273f 55%, #00131f 100%);
         }
 
-        .login-logo {
-            font-size: 40px;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-        }
+
 
         .login-card {
             background: rgba(255, 255, 255, 0.06);
@@ -2205,21 +2244,168 @@
             min-width: 40px;
             text-align: center;
         }
+
+        /* --- ESTILOS PARA MIS RESERVAS (NUEVO) --- */
+
+        /* Tarjeta base de reserva */
+        .res-card {
+            background: white;
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+            transition: all 0.3s;
+            cursor: pointer;
+            overflow: hidden;
+            /* Para que la etiqueta no se salga */
+        }
+
+        .res-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        /* ESTADO ACTIVO: Borde verde y fondo suave */
+        .res-card.active {
+            border: 2px solid #10B981;
+            /* Verde esmeralda */
+            background: #ECFDF5;
+            /* Verde muy clarito */
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15);
+        }
+
+        /* La etiqueta flotante "EN CURSO" */
+        .active-tag {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #10B981;
+            color: white;
+            font-size: 9px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-bottom-left-radius: 12px;
+            box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.1);
+            animation: pulseTag 2s infinite;
+            /* Animación de latido */
+        }
+
+        @keyframes pulseTag {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* Textos dentro de la tarjeta */
+        .res-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .res-card-title {
+            font-weight: 700;
+            color: #1F2933;
+            font-size: 15px;
+        }
+
+        .res-card-time {
+            font-size: 13px;
+            color: #0055A4;
+            /* Azul corporativo */
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .res-card-date {
+            font-size: 11px;
+            color: #6B7280;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* --- OPTIMIZACIÓN MÓVIL (Full Screen en celular real) --- */
+        @media only screen and (max-width: 480px) {
+            body {
+                padding: 0;
+                margin: 0;
+                background: #F5F7FB;
+                /* Color de fondo de la app */
+                display: block;
+                /* Quitar el centrado flexible */
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            .container {
+                max-width: 100%;
+                margin: 0;
+            }
+
+            /* Ocultar el título H1 en celular para ganar espacio */
+            .container>h1 {
+                display: none;
+            }
+
+            .phone-container {
+                width: 100vw;
+                height: 100vh;
+                max-width: none;
+                filter: none;
+                /* Quitar sombra del marco falso */
+                margin: 0;
+            }
+
+            .screen {
+                width: 100% !important;
+                height: 100% !important;
+                border-radius: 0 !important;
+                /* Esquinas rectas */
+                border: none !important;
+                box-shadow: none !important;
+                top: 0 !important;
+                left: 0 !important;
+                transform: none !important;
+                /* Quitar centrado artificial */
+                position: fixed !important;
+            }
+
+            /* Ajustar listas para que usen el alto completo del celular */
+            .lab-list,
+            .list-container {
+                height: calc(100vh - 160px) !important;
+            }
+
+            /* Ajustar mapa al alto completo */
+            .map-container {
+                height: calc(100vh - 80px) !important;
+            }
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h1
-            style="text-align: center; color: white; font-size: 28px; margin-bottom: 20px; text-shadow: 0 4px 8px rgba(0,0,0,0.3);">
-            ESPOL Laboratorios
-        </h1>
+
 
         <div class="phone-container">
             <!-- --- Pantalla 1: Login --- -->
             <div id="screen-login" class="screen active">
                 <div class="login-screen">
-                    <div class="login-logo"> ESPOL </div>
+                    <div class="login-header">
+                        <img src="espollabs.png" alt="Logo ESPOL Labs" class="login-logo">
+                    </div>
                     <div class="login-card">
                         <div class="form-group">
                             <label class="label">Correo Institucional</label>
@@ -2244,7 +2430,6 @@
             <!-- Pantalla 2: Menú Estudiante -->
             <div id="screen-menu-student" class="screen">
                 <div class="menu-screen">
-                    <div class="back-arrow" onclick="navigateTo('screen-login', 'fade')">←</div>
                     <div class="header" style="display: flex; align-items: center; justify-content: space-between;">
                         <div style="width: 80px;">
                             <div class="back-arrow" onclick="navigateTo('screen-login', 'fade')"
@@ -2267,20 +2452,40 @@
                     </div>
                     <div class="menu-card">
                         <div class="menu-item" onclick="navigateTo('screen-lab-list', 'slide-left')">
-                            <div class="menu-icon">🖥️</div>
+                            <div class="menu-icon">
+                                <div class="menu-icon">
+                                    <div class="menu-icon"><img src="iconodisponibilidad.png" alt="Icono Mapa"
+                                            style="width: 28px; height: 28px; object-fit: contain;"></div>
+                                </div>
+                            </div>
                             <div class="menu-text">Ver Disponibilidad</div>
                         </div>
                         <div class="menu-item" onclick="openReportScreen()">
-                            <div class="menu-icon">⚠️</div>
+                            <div class="menu-icon">
+                                <div class="menu-icon"><img src="iconofallas.png" alt="Icono Mapa"
+                                        style="width: 28px; height: 28px; object-fit: contain;"></div>
+                            </div>
                             <div class="menu-text">Reportar Falla</div>
                         </div>
                         <div class="menu-item" onclick="navigateTo('screen-history', 'slide-left')">
-                            <div class="menu-icon">📋</div>
+                            <div class="menu-icon">
+                                <div class="menu-icon"><img src="iconoreportes.png" alt="Icono Mapa"
+                                        style="width: 28px; height: 28px; object-fit: contain;"></div>
+                            </div>
                             <div class="menu-text">Historial de Reportes</div>
                         </div>
                         <div class="menu-item" onclick="navigateTo('screen-campus-map', 'slide-left')">
-                            <div class="menu-icon">🗺️</div>
+                            <div class="menu-icon"><img src="iconomapa.png" alt="Icono Mapa"
+                                    style="width: 28px; height: 28px; object-fit: contain;"></div>
                             <div class="menu-text">Mapa del Campus</div>
+                        </div>
+
+                        <div class="menu-item" onclick="navigateTo('screen-reservations', 'slide-left')">
+                            <div class="menu-icon">
+                                <div class="menu-icon"><img src="iconoreserva.png" alt="Icono Mapa"
+                                        style="width: 28px; height: 28px; object-fit: contain;"></div>
+                            </div>
+                            <div class="menu-text">Mis Reservas</div>
                         </div>
                     </div>
                 </div>
@@ -2292,7 +2497,7 @@
                     <div class="back-arrow" onclick="navigateBack('slide-right')">←</div>
                     <div class="header">
                         <div class="title">Laboratorios</div>
-                        <div class="prefs-icon" id="prefs-icon-btn" onclick="openPrefsModal()">⚙️</div>
+                        <div class="prefs-icon" id="prefs-icon-btn" onclick="openPrefsModal()"><img src="iconofiltrar.png" alt="Falla" style="width: 28px; height: 28px; object-fit: contain;"></div>
                     </div>
 
                     <div style="margin-bottom: 15px;">
@@ -2318,7 +2523,7 @@
 
                     <!-- Tarjeta de Recomendación -->
                     <div class="recommendation-card" id="recommendation-card" style="display: none;">
-                        <div class="recommendation-icon">⭐</div>
+                        <div class="recommendation-icon"><img src="iconofavorito.png" alt="Recomendado" style="width: 28px; height: 28px; object-fit: contain;"></div>
                         <div class="recommendation-body">
                             <div class="title">Recomendado Ahora</div>
                             <div class="lab-name" id="rec-lab-text">Lab 103 (FIMCP) - 10 Libres</div>
@@ -2543,7 +2748,6 @@
             <!-- Pantalla 5: Menú Soporte (CON DASHBOARD) -->
             <div id="screen-menu-support" class="screen">
                 <div class="menu-screen">
-                    <div class="back-arrow" onclick="navigateTo('screen-login', 'fade')">←</div>
                     <div class="header" style="display: flex; align-items: center; justify-content: space-between;">
                         <div style="width: 60px;">
                             <div class="back-arrow" onclick="navigateTo('screen-login', 'fade')"
@@ -2561,16 +2765,16 @@
                     <div class="menu-card">
                         <!-- Botón Dashboard -->
                         <div class="menu-item" onclick="navigateTo('screen-dashboard', 'slide-left')">
-                            <div class="menu-icon">📊</div>
+                            <div class="menu-icon"><img src="iconodashboard.png" alt="PC" style="width: 28px; height: 28px; object-fit: contain;"></div>
                             <div class="menu-text">Dashboard</div>
                         </div>
                         <div class="menu-item" onclick="navigateTo('screen-lab-list', 'slide-left')">
-                            <div class="menu-icon">🖥️</div>
-                            <div class="menu-text">Ver Disponibilidad</div>
+                            <div class="menu-icon"><img src="iconogestionar.png" alt="Gestionar" style="width: 28px; height: 28px; object-fit: contain;"></div>
+                            <div class="menu-text">Gestionar</div>
                         </div>
                         <div class="menu-item" onclick="navigateTo('screen-faults', 'slide-left')"
                             style="position: relative;">
-                            <div class="menu-icon">📋</div>
+                            <div class="menu-icon"><img src="iconofallas.png" alt="Falla" style="width: 28px; height: 28px; object-fit: contain;"></div>
                             <div class="menu-text">Equipos con Fallas</div>
                             <div class="notification-badge" id="fault-badge">0</div>
                         </div>
@@ -2738,6 +2942,64 @@
                         <button type="button" onclick="resetMapZoom()">↺</button>
                     </div>
                 </div>
+                <div id="screen-reservations" class="screen">
+                    <div class="list-screen scrollable">
+                        <div class="back-arrow" onclick="navigateBack('slide-right')">←</div>
+                        <div class="header">
+                            <div class="title">Mis Reservas</div>
+                        </div>
+
+                        <div class="list-container" id="reservations-list-container"
+                            style="margin-top: 20px; height: 500px; padding-bottom: 80px;">
+                        </div>
+                    </div>
+
+                    <div class="modal-overlay sheet" id="res-detail-modal" onclick="closeResDetailModal()">
+                        <div class="modal-content" onclick="event.stopPropagation()">
+                            <div class="modal-header">
+                                <div class="modal-title">Detalle de Reserva</div>
+                                <div class="close-btn" onclick="closeResDetailModal()">×</div>
+                            </div>
+                            <div class="modal-body">
+                                <div style="text-align: center; margin-bottom: 20px;">
+                                    <div class="pc-icon-large" id="res-detail-icon"
+                                        style="background: #E6FFFA; border: 2px solid #10B981; color: #065F46;">
+                                        📅
+                                    </div>
+                                    <span class="status-badge" id="res-detail-status">Activa</span>
+                                </div>
+
+                                <div class="detail-section" style="margin-top:0;">
+                                    <div class="lab-info-row"><span>Laboratorio:</span> <strong
+                                            id="res-detail-lab">-</strong></div>
+                                    <div class="lab-info-row"><span>Equipo:</span> <strong id="res-detail-pc">-</strong>
+                                    </div>
+                                    <div class="lab-info-row"><span>Horario:</span> <strong
+                                            id="res-detail-time">-</strong></div>
+                                    <div class="lab-info-row"><span>Fecha:</span> <strong
+                                            id="res-detail-date">-</strong></div>
+                                </div>
+
+                                <div id="countdown-container"
+                                    style="background: #1F2933; color: white; border-radius: 12px; padding: 15px; text-align: center; margin-top: 20px; display: none;">
+                                    <div
+                                        style="font-size: 10px; text-transform: uppercase; color: #9CA3AF; margin-bottom: 5px;">
+                                        Tiempo Restante</div>
+                                    <div id="res-countdown"
+                                        style="font-size: 24px; font-weight: 700; font-family: monospace;">00:00:00
+                                    </div>
+                                </div>
+
+                                <button id="btn-cancel-active" class="submit-btn"
+                                    style="background: #EF4444; margin-top: 20px; display: none;"
+                                    onclick="cancelReservationFromList()">
+                                    Cancelar Reserva
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
 
                 <div id="screen-dashboard" class="screen">
                     <div class="list-screen scrollable">
@@ -2827,16 +3089,15 @@
             <div class="dot" data-dot="4"></div>
         </div>
 
-        <div class="info-panel" id="info-panel">
-            <div class="info-title" id="info-title">👋 Pantalla de Inicio</div>
-            <div class="info-text" id="info-text">Selecciona tu rol para comenzar a usar la aplicación</div>
-        </div>
     </div>
 
     <script>
         let currentScreen = 'screen-login';
         let previousScreenStack = ['screen-login'];
         let userRole = null;
+        // --- NUEVO: Variables para el historial ---
+        let reservationHistory = [];
+        let countdownInterval = null;
         let pcStates = [];
         let selectedFaultKey = null;
         let labs = [];
@@ -2960,6 +3221,10 @@
             }
             if (screenId === 'screen-dashboard') {
                 updateDashboard();
+            }
+            // --- NUEVO: Renderizar lista al entrar ---
+            if (screenId === 'screen-reservations') {
+                renderReservationsScreen();
             }
             if (screenId === 'screen-roles') {
                 previousScreenStack = [{ screen: 'screen-roles', data: null }];
@@ -3905,41 +4170,181 @@
         function confirmReservation() {
             if (!selectedBookingSlot) return;
 
-            // Crear reserva
+            // 1. Datos básicos
             const rows = ['A', 'B', 'C'];
             const row = rows[Math.floor((currentSelectedPCIndex - 1) / 4)];
             const col = ((currentSelectedPCIndex - 1) % 4) + 1;
             const seatId = `${row}-${col}`;
 
-            currentReservation = {
+            // 2. Calcular Hora Fin Real para el contador
+            // El formato es "10:00 - 10:15". Tomamos la segunda parte.
+            const timeParts = selectedBookingSlot.split(' - ')[1].split(':');
+            const endDate = new Date();
+            endDate.setHours(parseInt(timeParts[0]), parseInt(timeParts[1]), 0);
+
+            // Si la hora de fin ya pasó hoy (ej: reservo a las 23:00 para las 08:00), es mañana
+            if (endDate < new Date()) endDate.setDate(endDate.getDate() + 1);
+
+            // 3. Crear Objeto Reserva
+            const newRes = {
+                id: Date.now(),
                 lab: selectedLab.name,
+                faculty: selectedLab.faculty,
                 pc: currentSelectedPCIndex,
                 seatId: seatId,
-                time: selectedBookingSlot
+                timeSlot: selectedBookingSlot,
+                endTime: endDate,      // Guardamos el objeto Date real
+                status: 'active',      // active, cancelled, completed
+                dateStr: new Date().toLocaleDateString()
             };
 
-            closePCInfoModal();
-            generatePCGrid(); // Actualizar visualmente
-            showNotification('Reserva Confirmada', `Has reservado la PC ${seatId} en ${selectedLab.name} para las ${selectedBookingSlot}.`, '🎟️');
+            // 4. Guardar en historial
+            currentReservation = newRes;
+            reservationHistory.unshift(newRes); // Poner al principio de la lista
 
-            // --- NUEVO: Efectos de Confeti y Sonido ---
+            // 5. Cerrar y Notificar
+            closePCInfoModal();
+            generatePCGrid();
+
             fireConfetti();
             playSound('success');
+            showNotification('Reserva Confirmada', `Has reservado la PC ${seatId}. Revisa "Mis Reservas".`, '🎟️');
         }
-
-        // --- NUEVO: Cancelar Reserva ---
         function cancelReservation() {
+            // En lugar de borrar, marcamos como "Cancelada" en el historial
+            if (currentReservation) {
+                const historyItem = reservationHistory.find(r => r.id === currentReservation.id);
+                if (historyItem) historyItem.status = 'cancelled';
+            }
+
             currentReservation = null;
-            closePCInfoModal(); // Si estaba abierto
-            if (currentScreen === 'screen-lab') generatePCGrid(); // Refrescar si estoy en el lab
-            if (currentScreen === 'screen-history') updateHistoryList(); // Refrescar historial
+            closePCInfoModal();
+            closeResDetailModal(); // Cerrar el modal de detalle si está abierto
 
-            // --- NUEVO: Sonido de "baja" o cancelación ---
+            // Refrescar pantallas según dónde estemos
+            if (currentScreen === 'screen-lab') generatePCGrid();
+            if (currentScreen === 'screen-reservations') renderReservationsScreen();
+
             playSound('error');
-
-            showNotification('Reserva Cancelada', `Tu reserva ha sido cancelada exitosamente.`, '🗑️');
+            showNotification('Reserva Cancelada', `Tu reserva ha sido cancelada.`, '🗑️');
         }
 
+        // Función auxiliar para el botón rojo dentro de la lista
+        function cancelReservationFromList() {
+            cancelReservation();
+        }
+
+        // --- RENDERIZADO DE LA PANTALLA "MIS RESERVAS" ---
+        function renderReservationsScreen() {
+            const container = document.getElementById('reservations-list-container');
+            container.innerHTML = '';
+
+            if (reservationHistory.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="display:block; padding-top: 60px;">
+                        <div class="icon">📅</div>
+                        <div class="title">Sin Reservas</div>
+                        <div class="text">Tus reservas activas e historial aparecerán aquí.</div>
+                    </div>`;
+                return;
+            }
+
+            reservationHistory.forEach(res => {
+                const isActive = res.status === 'active';
+                // Colores dinámicos
+                let statusColor = '#6B7280'; // Gris (Finalizada)
+                let statusText = 'Finalizada';
+
+                if (isActive) {
+                    statusColor = '#10B981'; // Verde
+                    statusText = 'ACTIVA';
+                } else if (res.status === 'cancelled') {
+                    statusColor = '#EF4444'; // Rojo
+                    statusText = 'Cancelada';
+                }
+
+                const card = document.createElement('div');
+                card.className = `res-card ${isActive ? 'active' : ''}`;
+                card.onclick = () => openResDetailModal(res);
+
+                card.innerHTML = `
+                    ${isActive ? '<div class="active-tag">EN CURSO</div>' : ''}
+                    <div class="res-card-header">
+                        <div class="res-card-title">${res.lab} <span style="font-weight:400; color:#6B7280;">(${res.seatId})</span></div>
+                        <div class="status-badge" style="background:${statusColor}20; color:${statusColor}; border:1px solid ${statusColor}; font-size: 10px;">${statusText}</div>
+                    </div>
+                    <div class="res-card-time">🕒 ${res.timeSlot}</div>
+                    <div class="res-card-date">📅 ${res.dateStr} • ${res.faculty}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- MODAL DE DETALLE Y CONTADOR ---
+        function openResDetailModal(res) {
+            const modal = document.getElementById('res-detail-modal');
+            const isActive = res.status === 'active';
+
+            // Llenar datos
+            document.getElementById('res-detail-lab').textContent = `${res.lab} (${res.faculty})`;
+            document.getElementById('res-detail-pc').textContent = `PC ${res.seatId}`;
+            document.getElementById('res-detail-time').textContent = res.timeSlot;
+            document.getElementById('res-detail-date').textContent = res.dateStr;
+
+            const badge = document.getElementById('res-detail-status');
+            badge.textContent = isActive ? 'Activa' : (res.status === 'cancelled' ? 'Cancelada' : 'Finalizada');
+            badge.className = `status-badge ${isActive ? 'status-resuelto' : 'status-recibido'}`;
+
+            // Configurar Contador
+            const countdownContainer = document.getElementById('countdown-container');
+            const cancelBtn = document.getElementById('btn-cancel-active');
+
+            // Limpiar intervalo anterior por si acaso
+            if (countdownInterval) clearInterval(countdownInterval);
+
+            if (isActive) {
+                countdownContainer.style.display = 'block';
+                cancelBtn.style.display = 'block';
+
+                // Iniciar cuenta regresiva
+                startCountdown(res.endTime);
+            } else {
+                countdownContainer.style.display = 'none';
+                cancelBtn.style.display = 'none';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closeResDetailModal() {
+            document.getElementById('res-detail-modal').style.display = 'none';
+            if (countdownInterval) clearInterval(countdownInterval);
+        }
+
+        function startCountdown(endTime) {
+            const timerEl = document.getElementById('res-countdown');
+
+            function update() {
+                const now = new Date();
+                const diff = endTime - now;
+
+                if (diff <= 0) {
+                    timerEl.textContent = "00:00:00";
+                    clearInterval(countdownInterval);
+                    return;
+                }
+
+                // Matemáticas de tiempo
+                const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+                timerEl.textContent = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }
+
+            update(); // Ejecutar una vez al inicio para que no tarde 1 seg en aparecer
+            countdownInterval = setInterval(update, 1000);
+        }
 
         function closePCInfoModal() {
             document.getElementById('pc-info-modal').style.display = 'none';
@@ -4378,13 +4783,13 @@
         }
 
         // Iniciar ciclo de vida simulado (cada 15 segundos aprox)
-        setInterval(() => {
-            // CAMBIO: Agregamos "userRole === 'student'"
-            // Así solo funciona si ya iniciaste sesión Y eres estudiante.
-            if (userRole === 'student' && Math.random() > 0.6) {
-                showSystemToast();
-            }
-        }, 8000);
+        //    setInterval(() => {
+        //     // CAMBIO: Agregamos "userRole === 'student'"
+        //     // Así solo funciona si ya iniciaste sesión Y eres estudiante.
+        //     if (userRole === 'student' && Math.random() > 0.6) {
+        //         showSystemToast();
+        //     }
+        // }, 8000);
     </script>
 </body>
 
