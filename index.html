@@ -6,9 +6,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESPOL Laboratorios - Prototipo Interactivo</title>
     <style>
-        /* --- NUEVO: Estilos para "Juicy UI" y Notificaciones --- */
+        /* Corrección para el icono del Modal de Reserva */
+        #res-detail-icon {
+            display: flex !important;
+            /* Activa el modo flexible */
+            align-items: center !important;
+            /* Centrado Vertical (Arriba/Abajo) */
+            justify-content: center !important;
+            /* Centrado Horizontal (Izq/Der) */
+            padding: 0 !important;
+            /* Elimina rellenos que empujen */
+        }
 
-        /* 1. Animación de Rebote (Bounce) al hacer clic */
+        /* Estilo para la imagen dentro del círculo */
+        .icon-centered-large {
+            width: 50px;
+            /* Tamaño ideal para un círculo de 100px */
+            height: 50px;
+            object-fit: contain;
+            display: block;
+            /* Evita espacios fantasmas debajo de la imagen */
+            margin: 0;
+            /* Quita cualquier margen extraño */
+        }
+
+
         @keyframes clickBounce {
             0% {
                 transform: scale(1);
@@ -641,6 +663,8 @@
 
 
         /* Modal Polimórfico (Bottom Sheet) */
+        /* Corrección de la capa oscura de fondo */
+        /* Modal Polimórfico (Bottom Sheet) - CORREGIDO */
         .modal-overlay {
             display: none;
             position: absolute;
@@ -648,22 +672,35 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            border-radius: 28px;
-            animation: fadeIn 0.3s ease-out;
-            justify-content: center;
-            align-items: flex-end;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+
+            /* CONFIGURACIÓN FLEXBOX CORRECTA */
+            display: none;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: stretch;
+            /* ✅ ESTO OBLIGA A USAR TODO EL ANCHO */
         }
 
+        /* Corrección de la tarjeta blanca */
         .modal-content {
             position: relative;
             width: 100%;
-            max-width: 360px;
+            /* Ocupar todo el ancho disponible */
+            max-width: 100%;
+            /* Asegurar que no tenga límites raros */
             background: white;
             border-radius: 28px 28px 0 0;
+            /* Redondeado solo arriba */
             box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+            /* PROPIEDAD CLAVE: */
+            flex-shrink: 0;
+            /* Prohíbe que se aplaste o encoja */
+            overflow: hidden;
+            /* Evita desbordes */
         }
 
         @keyframes slideUp {
@@ -2497,7 +2534,9 @@
                     <div class="back-arrow" onclick="navigateBack('slide-right')">←</div>
                     <div class="header">
                         <div class="title">Laboratorios</div>
-                        <div class="prefs-icon" id="prefs-icon-btn" onclick="openPrefsModal()"><img src="iconofiltrar.png" alt="Falla" style="width: 28px; height: 28px; object-fit: contain;"></div>
+                        <div class="prefs-icon" id="prefs-icon-btn" onclick="openPrefsModal()"><img
+                                src="iconofiltrar.png" alt="Falla"
+                                style="width: 28px; height: 28px; object-fit: contain;"></div>
                     </div>
 
                     <div style="margin-bottom: 15px;">
@@ -2523,7 +2562,8 @@
 
                     <!-- Tarjeta de Recomendación -->
                     <div class="recommendation-card" id="recommendation-card" style="display: none;">
-                        <div class="recommendation-icon"><img src="iconofavorito.png" alt="Recomendado" style="width: 28px; height: 28px; object-fit: contain;"></div>
+                        <div class="recommendation-icon"><img src="iconofavorito.png" alt="Recomendado"
+                                style="width: 28px; height: 28px; object-fit: contain;"></div>
                         <div class="recommendation-body">
                             <div class="title">Recomendado Ahora</div>
                             <div class="lab-name" id="rec-lab-text">Lab 103 (FIMCP) - 10 Libres</div>
@@ -2765,16 +2805,19 @@
                     <div class="menu-card">
                         <!-- Botón Dashboard -->
                         <div class="menu-item" onclick="navigateTo('screen-dashboard', 'slide-left')">
-                            <div class="menu-icon"><img src="iconodashboard.png" alt="PC" style="width: 28px; height: 28px; object-fit: contain;"></div>
+                            <div class="menu-icon"><img src="iconodashboard.png" alt="PC"
+                                    style="width: 28px; height: 28px; object-fit: contain;"></div>
                             <div class="menu-text">Dashboard</div>
                         </div>
                         <div class="menu-item" onclick="navigateTo('screen-lab-list', 'slide-left')">
-                            <div class="menu-icon"><img src="iconogestionar.png" alt="Gestionar" style="width: 28px; height: 28px; object-fit: contain;"></div>
+                            <div class="menu-icon"><img src="iconogestionar.png" alt="Gestionar"
+                                    style="width: 28px; height: 28px; object-fit: contain;"></div>
                             <div class="menu-text">Gestionar</div>
                         </div>
                         <div class="menu-item" onclick="navigateTo('screen-faults', 'slide-left')"
                             style="position: relative;">
-                            <div class="menu-icon"><img src="iconofallas.png" alt="Falla" style="width: 28px; height: 28px; object-fit: contain;"></div>
+                            <div class="menu-icon"><img src="iconoreporte.png" alt="Falla"
+                                    style="width: 28px; height: 28px; object-fit: contain;"></div>
                             <div class="menu-text">Equipos con Fallas</div>
                             <div class="notification-badge" id="fault-badge">0</div>
                         </div>
@@ -2879,6 +2922,60 @@
                         </button>
                     </div>
                 </div>
+                <!-- Modal de Tiempo de Reparación -->
+
+                <div class="modal-overlay sheet" id="fix-time-modal" onclick="closeFixModal()">
+
+                    <div class="modal-content" onclick="event.stopPropagation()">
+
+                        <div class="modal-header">
+
+                            <div class="modal-title">Gestionar Reporte</div>
+
+                            <div class="close-btn" onclick="closeFixModal()">×</div>
+
+                        </div>
+
+                        <div class="modal-body">
+
+                            <div class="form-group">
+
+                                <label class="label">Nuevo Estado del Reporte</label>
+
+                                <select id="report-status-select" class="input select"
+                                    onchange="toggleTimeInput(this.value)">
+
+                                    <option value="en revision">En Revisión</option>
+
+                                    <option value="en proceso">En Proceso</option>
+
+                                    <option value="resuelto">Resuelto</option>
+
+                                </select>
+
+                            </div>
+
+                            <div class="form-group" id="time-input-group" style="display: none;">
+
+                                <label class="label">Tiempo Estimado de Reparación (Ej: 25 min, 1.5h)</label>
+
+                                <input type="text" id="report-time-input" class="input" placeholder="Ej: 45 min">
+
+                            </div>
+
+                            <button class="submit-btn" style="max-width: 100%;" onclick="confirmFix()">
+
+                                <span class="btn-text">Actualizar Reporte</span>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
             </div>
 
             <!-- Pantalla 8: Notificación -->
@@ -2964,7 +3061,7 @@
                                 <div style="text-align: center; margin-bottom: 20px;">
                                     <div class="pc-icon-large" id="res-detail-icon"
                                         style="background: #E6FFFA; border: 2px solid #10B981; color: #065F46;">
-                                        📅
+                                        <img src="iconoreservado.png" class="icon-centered-large">
                                     </div>
                                     <span class="status-badge" id="res-detail-status">Activa</span>
                                 </div>
@@ -3049,33 +3146,7 @@
                     </div>
                 </div>
 
-                <!-- Modal de Tiempo de Reparación -->
-                <div class="modal-overlay sheet" id="fix-time-modal" onclick="closeFixModal()">
-                    <div class="modal-content" onclick="event.stopPropagation()">
-                        <div class="modal-header">
-                            <div class="modal-title">Gestionar Reporte</div>
-                            <div class="close-btn" onclick="closeFixModal()">×</div>
-                        </div>
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label class="label">Nuevo Estado del Reporte</label>
-                                <select id="report-status-select" class="input select"
-                                    onchange="toggleTimeInput(this.value)">
-                                    <option value="en revision">En Revisión</option>
-                                    <option value="en proceso">En Proceso</option>
-                                    <option value="resuelto">Resuelto</option>
-                                </select>
-                            </div>
-                            <div class="form-group" id="time-input-group" style="display: none;">
-                                <label class="label">Tiempo Estimado de Reparación (Ej: 25 min, 1.5h)</label>
-                                <input type="text" id="report-time-input" class="input" placeholder="Ej: 45 min">
-                            </div>
-                            <button class="submit-btn" style="max-width: 100%;" onclick="confirmFix()">
-                                <span class="btn-text">Actualizar Reporte</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+
 
             </div>
 
@@ -3113,14 +3184,15 @@
         let mapZoom = 1;
         let selectedBookingSlot = null;
 
-        let faultReports = [
+        let faultReports = JSON.parse(localStorage.getItem('faultReports')) || [
             { id: 1, lab: 'Lab 101 (FIEC)', pc: 12, description: 'No enciende. Posible problema de fuente.', status: 'recibido', priority: 'alta', evidence: 'falla_fuente.jpg', fixTime: null },
             { id: 2, lab: 'Lab 103 (FIMCP)', pc: 3, description: 'Sin internet. Cable desconectado.', status: 'en revision', priority: 'media', evidence: null, fixTime: null },
             { id: 3, lab: 'Lab 101 (FIEC)', pc: 8, description: 'Teclado dañado. Teclas no responden.', status: 'recibido', priority: 'media', evidence: 'tecla_rota.png', fixTime: null },
             { id: 4, lab: 'Lab 105 (FADCOM)', pc: 5, description: 'Monitor no da imagen.', status: 'resuelto', priority: 'baja', evidence: null, fixTime: '15 min' },
-            { id: 5, lab: 'Lab 102 (FIEC)', pc: 2, description: 'Mouse no funciona.', status: 'recibido', priority: 'baja', evidence: null, fixTime: null },
-            { id: 6, lab: 'Lab 101 (FIEC)', pc: 12, description: 'Pantalla azul al iniciar Windows.', status: 'recibido', priority: 'alta', evidence: 'bsod.jpg', fixTime: null },
         ];
+
+        // También cargamos el estado de la notificación
+        newNotification = localStorage.getItem('newNotification') === 'true';
 
         const softwareDB = {
             'FIEC': ['Python', 'Java', 'Docker', 'VS Code', 'Matlab'],
@@ -3200,6 +3272,19 @@
             }, 400);
             currentScreen = screenId;
 
+            if (screenId === 'screen-login') {
+                // 1. Limpiar los campos de texto (seguridad)
+                document.getElementById('login-email').value = '';
+                document.getElementById('login-password').value = '';
+
+                // 2. Ocultar mensajes de error viejos
+                document.getElementById('login-error').style.display = 'none';
+
+                // 3. LA SOLUCIÓN: Forzar al botón a volver a la normalidad
+                const btn = document.getElementById('login-button');
+                btn.classList.remove('loading'); // Quita el spinner
+                btn.disabled = false;            // Reactiva el click
+            }
             // Acciones específicas
             if (screenId === 'screen-lab-list') {
                 initializeLabs();
@@ -3359,6 +3444,7 @@
 
         function clearNotificationAndNavigate() {
             newNotification = false;
+            localStorage.setItem('newNotification', 'false'); // <-- NUEVO
             updateNotificationDot();
             navigateTo('screen-history', 'slide-left');
         }
@@ -3751,6 +3837,7 @@
                 };
 
                 faultReports.unshift(newReport);
+                localStorage.setItem('faultReports', JSON.stringify(faultReports));
                 updateFaultList();
 
                 if (selectedLab && labName === `${selectedLab.name} (${selectedLab.faculty})` && pc <= pcStates.length) {
@@ -3967,16 +4054,25 @@
                     generatePCGrid(false);
                 }
                 newNotification = true;
+
+                // --- NUEVO: Guardar estado de notificación y reportes ---
+                localStorage.setItem('newNotification', 'true');
+                localStorage.setItem('faultReports', JSON.stringify(faultReports));
+
                 updateNotificationDot();
-            }
-            selectedFaultKey = null;
-            updateFaultList();
-            closeFixModal();
-            showNotification(
-                'Reporte Actualizado',
-                `El reporte para la PC ${report.pc} ha sido marcado como "${newStatus}".`,
-                '✅'
-            );
+            } else {
+                // Si solo cambia de estado (ej: a 'en proceso'), también guardamos
+                localStorage.setItem('faultReports', JSON.stringify(faultReports));
+            
+        }
+        selectedFaultKey = null;
+        updateFaultList();
+        closeFixModal();
+        showNotification(
+            'Reporte Actualizado',
+            `El reporte para la PC ${report.pc} ha sido marcado como "${newStatus}".`,
+            '✅'
+        );
         }
 
         function showNotification(title, message, icon = '🔔') {
